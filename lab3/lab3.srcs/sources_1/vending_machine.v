@@ -39,13 +39,13 @@ module vending_machine(
     assign kkCoinValue[2] = 1000;
 
     // Internal states. You may add your own reg variables.
-    reg [`kNumItems - 1:0] select_item;
+    reg [`kNumItems - 1:0] output_item;
     reg [`kTotalBits - 1:0] current_total;
     reg [`kCoinBits - 1:0] num_coins [`kNumCoins - 1:0]; // use if needed
 
     // Combinational circuit
     always @(*) begin
-        select_item = i_select_item & o_available_item;
+        output_item = i_select_item & o_available_item;
         if (i_input_coin != `kNumCoins'b0) begin
             case (i_input_coin)
                 `kNumCoins'b1: current_total = o_current_total + kkCoinValue[0];
@@ -54,8 +54,8 @@ module vending_machine(
                 default: current_total = o_current_total;
             endcase
         end
-        else if (select_item != `kNumItems'b0) begin
-            case (select_item)
+        else if (output_item != `kNumItems'b0) begin
+            case (output_item)
                 `kNumItems'b1: current_total = o_current_total - kkItemPrice[0];
                 `kNumItems'b10: current_total = o_current_total - kkItemPrice[1];
                 `kNumItems'b100: current_total = o_current_total - kkItemPrice[2];
@@ -89,7 +89,7 @@ module vending_machine(
                              (current_total >= kkItemPrice[2]) ? `kNumItems'b111 :
                              (current_total >= kkItemPrice[1]) ? `kNumItems'b11 :
                              (current_total >= kkItemPrice[0]) ? `kNumItems'b1 : `kNumItems'b0;
-            o_output_item <= select_item;
+            o_output_item <= output_item;
             o_current_total <= current_total;
             if (i_trigger_return) begin
                 o_return_coin <= num_coins[0] + num_coins[1] + num_coins[2];
@@ -126,8 +126,8 @@ module vending_machine(
                             num_coins[2] <= num_coins[2] + `kCoinBits'd1;
                     endcase
                 end
-                else if (select_item != `kNumItems'b0) begin
-                    case (select_item)
+                else if (output_item != `kNumItems'b0) begin
+                    case (output_item)
                         `kNumItems'b1:
                             if (num_coins[0] < `kCoinBits'd4 && num_coins[1] == `kCoinBits'd0) begin
                                 num_coins[0] <= num_coins[0] + `kCoinBits'd5 - `kCoinBits'd4;
