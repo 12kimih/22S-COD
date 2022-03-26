@@ -124,7 +124,6 @@ module vending_machine(
                             end
                         `kNumCoins'b100:
                             num_coins[2] <= num_coins[2] + `kCoinBits'd1;
-                        default: ;
                     endcase
                 end
                 else if (select_item != `kNumItems'b0) begin
@@ -154,7 +153,6 @@ module vending_machine(
                             num_coins[2] <= num_coins[2] - `kCoinBits'd1;
                         `kNumItems'b1000:
                             num_coins[2] <= num_coins[2] - `kCoinBits'd2;
-                        default: ;
                     endcase
                 end
             end
