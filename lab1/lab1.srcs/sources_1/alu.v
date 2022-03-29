@@ -18,7 +18,7 @@
 `define OP_ALS 4'b1110
 `define OP_RL 4'b1111
 
-module alu(
+module alu (
         A,
         B,
         Cin,

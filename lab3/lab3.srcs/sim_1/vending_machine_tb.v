@@ -18,15 +18,15 @@ module vending_machine_tb;
     integer Failed;
 
     // Unit Under Test port map
-    vending_machine UUT(.clk(clk),
-                        .reset_n(reset_n),
-                        .i_input_coin(i_input_coin),
-                        .i_select_item(i_select_item),
-                        .i_trigger_return(i_trigger_return),
-                        .o_available_item(o_available_item),
-                        .o_output_item(o_output_item),
-                        .o_return_coin(o_return_coin),
-                        .o_current_total(o_current_total));
+    vending_machine UUT (.clk(clk),
+                         .reset_n(reset_n),
+                         .i_input_coin(i_input_coin),
+                         .i_select_item(i_select_item),
+                         .i_trigger_return(i_trigger_return),
+                         .o_available_item(o_available_item),
+                         .o_output_item(o_output_item),
+                         .o_return_coin(o_return_coin),
+                         .o_current_total(o_current_total));
 
     // clock signal
     initial clk <= 0;

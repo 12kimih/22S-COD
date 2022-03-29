@@ -35,12 +35,12 @@ module alu_tb;
 
     // Unit Under Test port map
     // TODO : If your module and its pin have different name, you should change the mapping.
-    alu UUT(.A(A),
-            .B(B),
-            .Cin(Cin),
-            .OP(OP),
-            .C(C),
-            .Cout(Cout));
+    alu UUT (.A(A),
+             .B(B),
+             .Cin(Cin),
+             .OP(OP),
+             .C(C),
+             .Cout(Cout));
 
     initial begin
         Passed = 0;

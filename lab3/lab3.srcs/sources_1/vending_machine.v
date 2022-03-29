@@ -1,6 +1,6 @@
 `include "vending_machine_def.v"
 
-module vending_machine(
+module vending_machine (
         clk,     // Clock signal
         reset_n, // Reset signal (active-low)
 
@@ -11,7 +11,8 @@ module vending_machine(
         o_available_item, // Sign of the item availability
         o_output_item,    // Sign of the item withdrawal
         o_return_coin,    // Sign of the coin return
-        o_current_total);
+        o_current_total
+    );
 
     // Ports Declaration
     input clk;
