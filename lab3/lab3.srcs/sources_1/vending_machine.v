@@ -39,12 +39,11 @@ module vending_machine (
     assign kkCoinValue[1] = 500;
     assign kkCoinValue[2] = 1000;
 
-    // Internal states. You may add your own reg variables.
+    // Internal states
     reg [`kNumItems - 1:0] output_item;
     reg [`kTotalBits - 1:0] current_total;
-    reg [`kCoinBits - 1:0] num_coins [`kNumCoins - 1:0]; // use if needed
+    reg [`kCoinBits - 1:0] num_coins [`kNumCoins - 1:0];
 
-    // Combinational circuit
     always @(*) begin
         output_item = i_select_item & o_available_item;
         if (|i_input_coin) begin
@@ -72,10 +71,8 @@ module vending_machine (
         end
     end
 
-    // Sequential circuit
     always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            // TODO: reset all states.
             o_available_item <= `kNumItems'b0;
             o_output_item <= `kNumItems'b0;
             o_current_total <= `kTotalBits'b0;
@@ -85,7 +82,6 @@ module vending_machine (
             num_coins[2] <= `kCoinBits'b0;
         end
         else begin
-            // TODO: update all states.
             o_available_item <= (current_total >= kkItemPrice[3]) ? `kNumItems'b1111 :
                              (current_total >= kkItemPrice[2]) ? `kNumItems'b111 :
                              (current_total >= kkItemPrice[1]) ? `kNumItems'b11 :
