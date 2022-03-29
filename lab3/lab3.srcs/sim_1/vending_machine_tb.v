@@ -6,9 +6,11 @@ module vending_machine_tb;
     // Internal signal declaration
     reg clk;
     reg reset_n;
+
     reg [2:0] i_input_coin;
     reg [3:0] i_select_item;
     reg i_trigger_return;
+
     wire [3:0] o_available_item;
     wire [3:0] o_output_item;
     wire [9:0] o_return_coin;

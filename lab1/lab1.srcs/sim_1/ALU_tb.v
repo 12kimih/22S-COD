@@ -21,12 +21,12 @@
 `define OP_ALS 4'b1110
 `define OP_RL 4'b1111
 
-module alu_tb;
+module ALU_tb;
     // Internal signals declarations:
+    reg [3:0] OP;
     reg [15:0] A;
     reg [15:0] B;
     reg Cin;
-    reg [3:0] OP;
     wire [15:0] C;
     wire Cout;
 
@@ -35,10 +35,10 @@ module alu_tb;
 
     // Unit Under Test port map
     // TODO : If your module and its pin have different name, you should change the mapping.
-    alu UUT (.A(A),
+    ALU UUT (.OP(OP),
+             .A(A),
              .B(B),
              .Cin(Cin),
-             .OP(OP),
              .C(C),
              .Cout(Cout));
 
