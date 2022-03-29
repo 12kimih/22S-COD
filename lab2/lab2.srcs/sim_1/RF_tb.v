@@ -34,15 +34,15 @@ module RF_tb;
 
     // Connect the RF to RF_tb
     // Please follow name specified here.
-    RF rf(.clk(clk),
-          .reset_n(reset_n),
-          .write(write),
-          .addr1(addr[0]),
-          .addr2(addr[1]),
-          .addr3(addr[2]),
-          .data1(r_data[0]),
-          .data2(r_data[1]),
-          .data3(w_data));
+    RF rf (.clk(clk),
+           .reset_n(reset_n),
+           .write(write),
+           .addr1(addr[0]),
+           .addr2(addr[1]),
+           .addr3(addr[2]),
+           .data1(r_data[0]),
+           .data2(r_data[1]),
+           .data3(w_data));
 
     /* Clock generator */
     always #(`CLOCK_PERIOD / 2) clk = ~clk;
