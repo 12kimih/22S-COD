@@ -1,3 +1,4 @@
+`include "cpu_def.v"
 `include "opcodes.v"
 
 module ALU (
@@ -9,11 +10,11 @@ module ALU (
         Cout
     );
 
-    input [3:0] OP;
-    input [15:0] A;
-    input [15:0] B;
+    input [`ALUOP_SIZE - 1:0] OP;
+    input [`WORD_SIZE - 1:0] A;
+    input [`WORD_SIZE - 1:0] B;
     input Cin;
-    output reg [15:0] C;
+    output reg [`WORD_SIZE - 1:0] C;
     output reg Cout;
 
     always @(*) begin
