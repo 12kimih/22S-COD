@@ -108,5 +108,4 @@ ipshared
 
 # >>> Workspace >>>
 *.sim
-*.runs
 # <<< Workspace <<<
