@@ -1,10 +1,6 @@
-// DEFINITIONS
-`define WORD_SIZE 16 // data and address word size
+`include "cpu_def.v"
+`include "opcodes.v"
 
-// INCLUDE files
-`include "opcodes.v" // "opcode.v" consists of "define" statements for the opcodes and function codes for all instructions
-
-// MODULE DECLARATION
 module cpu (
         clk,
         reset_n,
@@ -23,7 +19,6 @@ module cpu (
     output [`WORD_SIZE - 1:0] address; // current address for data
     inout [`WORD_SIZE - 1:0] data;     // data being input or output
 
-    // for debugging/testing purpose
     output [`WORD_SIZE - 1:0] num_inst;    // number of instruction during execution
     output [`WORD_SIZE - 1:0] output_port; // this will be used for a "WWD" instruction
 endmodule
