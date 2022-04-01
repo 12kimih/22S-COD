@@ -1,3 +1,6 @@
+`ifndef CPU_DEF_V
+`define CPU_DEF_V
+
 `define WORD_SIZE 16
 `define REG_SIZE  4
 `define REG_ADDR  2
@@ -12,3 +15,5 @@
 
 `define ALUOP_SIZE  4
 `define SIGSET_SIZE 16 // `ALUOP_SIZE + 12
+
+`endif

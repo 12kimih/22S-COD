@@ -1,3 +1,6 @@
+`ifndef OPCODES_V
+`define OPCODES_V
+
 `define OPCODE_BNE 4'd0
 `define OPCODE_BEQ 4'd1
 `define OPCODE_BGZ 4'd2
@@ -44,3 +47,5 @@
 `define OP_LLS  4'd13
 `define OP_ALS  4'd14
 `define OP_RL   4'd15
+
+`endif
