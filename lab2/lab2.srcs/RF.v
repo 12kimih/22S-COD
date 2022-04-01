@@ -27,7 +27,7 @@ module RF (
     output reg [`WORD_SIZE - 1:0] data2;
     input [`WORD_SIZE - 1:0] data3;
 
-    reg [`WORD_SIZE - 1:0] rf [`REG_SIZE - 1:0];
+    reg [`WORD_SIZE - 1:0] rf [0:`REG_SIZE - 1];
 
     always @(*) begin
         data1 = rf[addr1];
