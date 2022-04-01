@@ -22,7 +22,7 @@ module immediate (
             `OPCODE_LHI: extimm = {imm, `EXT_SIZE'b0};
             `OPCODE_LWD: extimm = {{`EXT_SIZE{imm[`IMM_SIZE - 1]}}, imm};
             `OPCODE_SWD: extimm = {{`EXT_SIZE{imm[`IMM_SIZE - 1]}}, imm};
-            default: extimm = `WORD_SIZE'b0;
+            default    : extimm = `WORD_SIZE'b0;
         endcase
     end
 endmodule
