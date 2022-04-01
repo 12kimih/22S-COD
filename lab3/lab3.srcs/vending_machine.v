@@ -31,13 +31,13 @@ module vending_machine (
     wire [31:0] kkItemPrice [`kNumItems - 1:0]; // Price of each item
     wire [31:0] kkCoinValue [`kNumCoins - 1:0]; // Value of each coin
 
-    assign kkItemPrice[0] = 400;
-    assign kkItemPrice[1] = 500;
-    assign kkItemPrice[2] = 1000;
-    assign kkItemPrice[3] = 2000;
-    assign kkCoinValue[0] = 100;
-    assign kkCoinValue[1] = 500;
-    assign kkCoinValue[2] = 1000;
+    assign kkItemPrice[0] = 32'd400;
+    assign kkItemPrice[1] = 32'd500;
+    assign kkItemPrice[2] = 32'd1000;
+    assign kkItemPrice[3] = 32'd2000;
+    assign kkCoinValue[0] = 32'd100;
+    assign kkCoinValue[1] = 32'd500;
+    assign kkCoinValue[2] = 32'd1000;
 
     // Internal states
     reg [`kNumItems - 1:0] output_item;
@@ -64,7 +64,7 @@ module vending_machine (
             endcase
         end
         else if (i_trigger_return) begin
-            current_total = `kTotalBits'b0;
+            current_total = `kTotalBits'd0;
         end
         else begin
             current_total = o_current_total;
@@ -75,11 +75,11 @@ module vending_machine (
         if (!reset_n) begin
             o_available_item <= `kNumItems'b0;
             o_output_item <= `kNumItems'b0;
-            o_current_total <= `kTotalBits'b0;
-            o_return_coin <= `kReturnCoins'b0;
-            num_coins[0] <= `kCoinBits'b0;
-            num_coins[1] <= `kCoinBits'b0;
-            num_coins[2] <= `kCoinBits'b0;
+            o_current_total <= `kTotalBits'd0;
+            o_return_coin <= `kReturnCoins'd0;
+            num_coins[0] <= `kCoinBits'd0;
+            num_coins[1] <= `kCoinBits'd0;
+            num_coins[2] <= `kCoinBits'd0;
         end
         else begin
             o_available_item <= (current_total >= kkItemPrice[3]) ? `kNumItems'b1111 :
@@ -89,7 +89,7 @@ module vending_machine (
             o_output_item <= output_item;
             o_current_total <= current_total;
             if (|i_input_coin) begin
-                o_return_coin <= `kReturnCoins'b0;
+                o_return_coin <= `kReturnCoins'd0;
                 case (i_input_coin)
                     `kNumCoins'b1:
                         if (num_coins[0] == `kCoinBits'd4 && num_coins[1] == `kCoinBits'd1) begin
@@ -117,7 +117,7 @@ module vending_machine (
                 endcase
             end
             else if (|output_item) begin
-                o_return_coin <= `kReturnCoins'b0;
+                o_return_coin <= `kReturnCoins'd0;
                 case (output_item)
                     `kNumItems'b1:
                         if (num_coins[0] < `kCoinBits'd4 && num_coins[1] == `kCoinBits'd0) begin
@@ -148,9 +148,9 @@ module vending_machine (
             end
             else if (i_trigger_return) begin
                 o_return_coin <= num_coins[0] + num_coins[1] + num_coins[2];
-                num_coins[0] <= `kCoinBits'b0;
-                num_coins[1] <= `kCoinBits'b0;
-                num_coins[2] <= `kCoinBits'b0;
+                num_coins[0] <= `kCoinBits'd0;
+                num_coins[1] <= `kCoinBits'd0;
+                num_coins[2] <= `kCoinBits'd0;
             end
         end
     end
