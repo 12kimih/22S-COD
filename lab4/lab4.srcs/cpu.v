@@ -35,7 +35,6 @@ module cpu (
     wire [1:0] regdata3mux;         // write data mux [0 = aluout|1 = memdata1|2 = PC|3 = input_port]
     wire wwd;                       // if current instruction is WWD
 
-    // >>> datapath >>>
     datapath datapath_unit (.clk(clk),
                             .reset_n(reset_n),
                             .inputReady(inputReady),
@@ -54,9 +53,7 @@ module cpu (
                             .regaddr3mux(regaddr3mux),
                             .regdata3mux(regdata3mux),
                             .wwd(wwd));
-    // <<< datapath <<<
 
-    // >>> control >>>
     control control_unit (.opcode(opcode),
                           .func(func),
                           .pcmux(pcmux),
@@ -67,5 +64,4 @@ module cpu (
                           .regaddr3mux(regaddr3mux),
                           .regdata3mux(regdata3mux),
                           .wwd(wwd));
-    // <<< control <<<
 endmodule
