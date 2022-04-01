@@ -36,13 +36,13 @@ module datapath (
     output [`OPCODE_SIZE - 1:0] opcode; // opcode of current instruction
     output [`FUNC_SIZE - 1:0] func;     // func of current R-format instruction
 
-    input [1:0] pcmux;               // PC mux [0 = pc + 1|1 = aluout|2 = {PC[15:12], IR[11:0]}|3 = regdata1]
+    input [1:0] pcmux;               // PC mux [0:PC + `WORD_SIZE'd1|1:aluout|2:{PC[15:12], IR[11:0]}|3:regdata1]
     input [`ALUOP_SIZE - 1:0] aluop; // ALU operation code
-    input [1:0] aluin1mux;           // ALU input 1 [0 = regdata1|1 = extimm|2 = PC|3 = 0]
-    input [1:0] aluin2mux;           // ALU input 2 [0 = regdata2|1 = extimm|2 = regdata1|3 = 0]
+    input [1:0] aluin1mux;           // ALU input 1 [0:regdata1|1:extimm|2:PC|3:`WORD_SIZE'b0]
+    input [1:0] aluin2mux;           // ALU input 2 [0:regdata2|1:extimm|2:regdata1|3:`WORD_SIZE'b0]
     input regwrite;                  // enable register write
-    input [1:0] regaddr3mux;         // write register mux [0 = IR[9:8]|1 = IR[7:6]|2 = 2]
-    input [1:0] regdata3mux;         // write data mux [0 = aluout|1 = memdata1|2 = PC|3 = input_port]
+    input [1:0] regaddr3mux;         // write register mux [0:IR[9:8]|1:IR[7:6]|2:`REG_ADDR'd2]
+    input [1:0] regdata3mux;         // write data mux [0:aluout|1:memdata1|2:PC|3:input_port]
     input wwd;                       // if current instruction is WWD
 
     // >>> PC >>>
