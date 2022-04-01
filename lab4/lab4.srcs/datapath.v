@@ -1,3 +1,6 @@
+`include "cpu_def.v"
+`include "opcodes.v"
+
 module datapath (
         clk,
         reset_n,
