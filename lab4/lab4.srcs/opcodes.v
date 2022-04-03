@@ -25,11 +25,8 @@
 `define FUNC_SHR 6'd7
 `define FUNC_JPR 6'd25
 `define FUNC_JRL 6'd26
-`define FUNC_RWD 6'd27
 `define FUNC_WWD 6'd28
 `define FUNC_HLT 6'd29
-`define FUNC_ENI 6'd30
-`define FUNC_DSI 6'd31
 
 `define OP_ADD  4'd0
 `define OP_SUB  4'd1

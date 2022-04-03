@@ -1,35 +1,26 @@
 `timescale 1ns / 100ps
 
-// DEFINITIONS
-`define PERIOD1 100
-`define READ_DELAY 30   // delay before memory data is ready
-`define WRITE_DELAY 30  // delay in writing to memory
-`define STABLE_TIME 10  // time data is stable after end-of-read
-`define MEMORY_SIZE 256 // size of memory is 2^8 words (reduced size) instead of 2^16 words to reduce memory requirements in the Active-HDL simulator
-`define WORD_SIZE 16
+`include "constants.v"
 
-// MODULE DEFINITION
 module cpu_tb;
-    // SIGNAL DECLARATIONS for chip inputs and outputs
-    reg clk;                         // clock signal
-    reg reset_n;                     // active-low RESET signal
-    reg inputReady;                  // indicates that data is ready from the input port
-    wire readM;                      // read from memory
-    wire [`WORD_SIZE - 1:0] address; // current address for data input or output
-    wire [`WORD_SIZE - 1:0] data;    // data being input or output
+    reg clk;     // clock
+    reg reset_n; // active-low reset
 
-    // for debugging purpose
-    wire [`WORD_SIZE - 1:0] num_inst;    // number of instruction during execution
-    wire [`WORD_SIZE - 1:0] output_port; // this will be used for a "WWD" instruction
+    wire readM;                      // enable memory read
+    reg inputReady;                  // if memory read is done
+    wire [`WORD_SIZE - 1:0] address; // memory inout data address
+    wire [`WORD_SIZE - 1:0] data;    // memory inout data
 
-    // SIGNAL DECLARATIONS for signals being used internally
-    reg [`WORD_SIZE - 1:0] outputData; // data output during a memory read
+    wire [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
+    wire [`WORD_SIZE - 1:0] output_port; // WWD output port
+
+    reg [`WORD_SIZE - 1:0] outputData; // memory read data
 
     // instantiate the unit under test
     cpu UUT (.clk(clk),
              .reset_n(reset_n),
-             .inputReady(inputReady),
              .readM(readM),
+             .inputReady(inputReady),
              .address(address),
              .data(data),
              .num_inst(num_inst),
@@ -37,22 +28,21 @@ module cpu_tb;
 
     // initialize inputs
     initial begin
-        clk = 0; // set initial clock value
+        clk = 0;
         inputReady = 0;
-        reset_n = 1; // generate a LOW pulse for reset_n
+        reset_n = 1;
         #(`PERIOD1 / 4) reset_n = 0;
         #`PERIOD1 reset_n = 1;
     end
 
     // generate the clock
-    always #(`PERIOD1 / 2) clk = ~clk; // generates a clock (period = `PERIOD1)
+    always #(`PERIOD1 / 2) clk = ~clk;
 
     // model the memory device
     reg [`WORD_SIZE - 1:0] memory [0:`MEMORY_SIZE - 1];
 
     // model the read process for the memory device
     assign data = readM ? outputData : `WORD_SIZE'bz;
-
     always begin
         outputData = `WORD_SIZE'bz;
         #`PERIOD1;

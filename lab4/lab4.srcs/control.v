@@ -1,4 +1,6 @@
-`include "cpu_def.v"
+`timescale 1ns / 100ps
+
+`include "constants.v"
 `include "opcodes.v"
 
 module control (
@@ -62,11 +64,8 @@ module control (
             `FUNC_SHR: sigset_R = {2'd0, `OP_ARS, 2'd0, 2'd0, 1'b1, 2'd1, 2'd0, 1'b0};
             `FUNC_JPR: sigset_R = {2'd3, `OP_ID , 2'd0, 2'd0, 1'b0, 2'd0, 2'd0, 1'b0};
             `FUNC_JRL: sigset_R = {2'd3, `OP_ID , 2'd0, 2'd0, 1'b1, 2'd2, 2'd2, 1'b0};
-            `FUNC_RWD: sigset_R = {2'd0, `OP_ID , 2'd0, 2'd0, 1'b1, 2'd1, 2'd3, 1'b0};
             `FUNC_WWD: sigset_R = {2'd0, `OP_ID , 2'd0, 2'd0, 1'b0, 2'd0, 2'd0, 1'b1};
             `FUNC_HLT: sigset_R = {2'd0, `OP_ID , 2'd0, 2'd0, 1'b0, 2'd0, 2'd0, 1'b0};
-            `FUNC_ENI: sigset_R = {2'd0, `OP_ID , 2'd0, 2'd0, 1'b0, 2'd0, 2'd0, 1'b0};
-            `FUNC_DSI: sigset_R = {2'd0, `OP_ID , 2'd0, 2'd0, 1'b0, 2'd0, 2'd0, 1'b0};
             default  : sigset_R = {2'd0, `OP_ID , 2'd0, 2'd0, 1'b0, 2'd0, 2'd0, 1'b0};
         endcase
     end

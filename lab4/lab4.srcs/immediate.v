@@ -1,4 +1,6 @@
-`include "cpu_def.v"
+`timescale 1ns / 100ps
+
+`include "constants.v"
 `include "opcodes.v"
 
 module immediate (

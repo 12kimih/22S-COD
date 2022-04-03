@@ -1,9 +1,15 @@
-`ifndef CPU_DEF_V
-`define CPU_DEF_V
+`ifndef CONSTANTS_V
+`define CONSTANTS_V
 
-`define WORD_SIZE 16
-`define REG_SIZE  4
-`define REG_ADDR  2
+`define PERIOD1     100
+`define READ_DELAY  30
+`define WRITE_DELAY 30
+`define STABLE_TIME 10
+
+`define WORD_SIZE   16
+`define REG_SIZE    4
+`define REG_ADDR    2
+`define MEMORY_SIZE 256
 
 `define INST_SIZE    16
 `define OPCODE_SIZE  4

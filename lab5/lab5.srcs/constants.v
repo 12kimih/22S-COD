@@ -12,7 +12,6 @@
 `define REG_SIZE    4
 `define REG_ADDR    2
 `define MEMORY_SIZE 256
-`define MEMORY_ADDR 8
 
 `define INST_SIZE    16
 `define OPCODE_SIZE  4

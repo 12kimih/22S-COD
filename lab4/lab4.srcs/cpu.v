@@ -1,11 +1,13 @@
-`include "cpu_def.v"
+`timescale 1ns / 100ps
+
+`include "constants.v"
 `include "opcodes.v"
 
 module cpu (
         clk,
         reset_n,
-        inputReady,
         readM,
+        inputReady,
         address,
         data,
         num_inst,
@@ -15,9 +17,9 @@ module cpu (
     input clk;     // clock
     input reset_n; // active-low reset
 
-    input inputReady;                  // if memory read is done
     output readM;                      // enable memory read
-    output [`WORD_SIZE - 1:0] address; // memory data address
+    input inputReady;                  // if memory read is done
+    output [`WORD_SIZE - 1:0] address; // memory inout data address
     inout [`WORD_SIZE - 1:0] data;     // memory inout data
 
     output [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
@@ -37,8 +39,8 @@ module cpu (
 
     datapath datapath_unit (.clk(clk),
                             .reset_n(reset_n),
-                            .inputReady(inputReady),
                             .readM(readM),
+                            .inputReady(inputReady),
                             .address(address),
                             .data(data),
                             .num_inst(num_inst),
