@@ -8,6 +8,7 @@ module datapath (
         reset_n,
         opcode,
         func,
+        nstate,
         pcwrite,
         pcmux,
         memwrite,
@@ -33,19 +34,20 @@ module datapath (
     output [`OPCODE_SIZE - 1:0] opcode; // operation code of current instruction
     output [`FUNC_SIZE - 1:0] func;     // function of current R-format instruction
 
-    input pcwrite;                   // PC write
-    input [1:0] pcmux;               // PC mux [0:AOR|1:{PC[15:12], IR[11:0]}|2:regdata1]
-    input memwrite;                  // enable memory write
-    input memaddrmux;                // memory address mux [0:PC|1:AOR]
-    input irwrite;                   // IR write
-    input regwrite;                  // enable register write
-    input [1:0] regaddr3mux;         // register address 3 mux [0:IR[9:8]|1:IR[7:6]|2:`REG_ADDR'd2]
-    input regdata3mux;               // register data 3 mux [0:AOR|1:MDR]
-    input [`ALUOP_SIZE - 1:0] aluop; // ALU operation
-    input aluin1mux;                 // ALU input 1 [0:regdata1|1:PC]
-    input [1:0] aluin2mux;           // ALU input 2 [0:regdata2|1:extimm|2:`WORD_SIZE'd1]
-    input branch;                    // if current instruction is branch
-    input wwd;                       // if current instruction is WWD
+    input [`STATE_SIZE - 1:0] nstate; // next state
+    input pcwrite;                    // PC write
+    input [1:0] pcmux;                // PC mux [0:AOR|1:{PC[15:12], IR[11:0]}|2:regdata1]
+    input memwrite;                   // enable memory write
+    input memaddrmux;                 // memory address mux [0:PC|1:AOR]
+    input irwrite;                    // IR write
+    input regwrite;                   // enable register write
+    input [1:0] regaddr3mux;          // register address 3 mux [0:IR[9:8]|1:IR[7:6]|2:`REG_ADDR'd2]
+    input regdata3mux;                // register data 3 mux [0:AOR|1:MDR]
+    input [`ALUOP_SIZE - 1:0] aluop;  // ALU operation
+    input [1:0] aluin1mux;            // ALU input 1 [0:regdata1|1:PC|2:AOR]
+    input [1:0] aluin2mux;            // ALU input 2 [0:regdata2|1:extimm|2:`WORD_SIZE'd1]
+    input branch;                     // if current instruction is branch
+    input wwd;                        // if current instruction is WWD
 
     input inputReady;                  // if memory read is done
     output [`WORD_SIZE - 1:0] address; // memory inout data address
@@ -137,7 +139,9 @@ module datapath (
     // <<< immediate <<<
 
     // >>> ALU >>>
-    assign aluin1 = aluin1mux ? PC : regdata1;
+    assign aluin1 = (aluin1mux == 2'd0) ? regdata1 :
+           (aluin1mux == 2'd1) ? PC :
+           (aluin1mux == 2'd2) ? AOR : regdata1;
     assign aluin2 = (aluin2mux == 2'd0) ? regdata2 :
            (aluin2mux == 2'd1) ? extimm :
            (aluin2mux == 2'd2) ? `WORD_SIZE'd1 : regdata2;
@@ -172,7 +176,9 @@ module datapath (
             output_port <= `WORD_SIZE'b0;
         end
         else begin
-            output_port <= wwd ? regdata1 : `WORD_SIZE'b0;
+            if (wwd) begin
+                output_port <= regdata1;
+            end
         end
     end
     // <<< output <<<
