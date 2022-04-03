@@ -56,7 +56,7 @@ module cpu (
                             .irwrite(irwrite),
                             .regwrite(regwrite),
                             .regaddr3mux(regaddr3mux),
-                            .regdata3mux(regaddr3mux),
+                            .regdata3mux(regdata3mux),
                             .aluop(aluop),
                             .aluin1mux(aluin1mux),
                             .aluin2mux(aluin2mux),

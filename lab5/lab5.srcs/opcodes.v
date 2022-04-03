@@ -12,7 +12,6 @@
 `define OPCODE_SWD 4'd8
 `define OPCODE_JMP 4'd9
 `define OPCODE_JAL 4'd10
-`define OPCODE_INI 4'd14
 `define OPCODE_R   4'd15
 
 `define FUNC_ADD 6'd0

@@ -90,7 +90,7 @@ module datapath (
     // >>> IR >>>
     always @(posedge inputReady or negedge reset_n) begin
         if (!reset_n) begin
-            IR <= {`OPCODE_INI, `OPERAND_SIZE'b0};
+            IR <= `WORD_SIZE'b0;
         end
         else begin
             if (irwrite) begin

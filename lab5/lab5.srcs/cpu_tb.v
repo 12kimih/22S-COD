@@ -119,7 +119,7 @@ module cpu_tb;
     always @(posedge clk) begin
         if (reset_n == 1) begin
             num_clock = num_clock + 1;
-            for (i = 0; i <`NUM_TEST; i = i + 1) begin
+            for (i = 0; i < `NUM_TEST; i = i + 1) begin
                 if (num_inst == TestNumInst[i]) begin
                     if (output_port == TestAns[i]) begin
                         TestPassed[i] = 1'b1;
@@ -145,7 +145,7 @@ module cpu_tb;
     initial @(testbench_finish) begin
         $display("Clock #%d", num_clock);
         $display("The testbench is finished. Summarizing...");
-        for (i = 0; i <`NUM_TEST; i = i + 1) begin
+        for (i = 0; i < `NUM_TEST; i = i + 1) begin
             if (TestPassed[i] == 1)
                 Passed = Passed + 1;
             else
