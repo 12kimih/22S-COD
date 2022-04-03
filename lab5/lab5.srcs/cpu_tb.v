@@ -16,17 +16,20 @@ module cpu_tb;
     wire [`WORD_SIZE - 1:0] output_port; // WWD output port
     wire is_halted;                      // HLT indicator
 
+    // instantiate the unit under test
     cpu UUT (readM, writeM, address, data, inputReady, reset_n, clk, num_inst, output_port, is_halted);
     memory memory_unit (readM, writeM, address, data, inputReady);
 
+    // initialize inputs
     initial begin
-        clk = 0; // set initial clock value
-        reset_n = 1; // generate a LOW pulse for reset_n
+        clk = 0;
+        reset_n = 1;
         #(`PERIOD1 / 4) reset_n = 0;
         #`PERIOD1 reset_n = 1;
     end
 
-    always #(`PERIOD1 / 2) clk = ~clk; // generates a clock (period = `PERIOD1)
+    // generate the clock
+    always #(`PERIOD1 / 2) clk = ~clk;
 
     event testbench_finish; // This event will finish the testbench.
 
