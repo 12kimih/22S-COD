@@ -18,11 +18,9 @@ module RF (
     input reset_n;
 
     input write;
-
     input [`REG_ADDR - 1:0] addr1;
     input [`REG_ADDR - 1:0] addr2;
     input [`REG_ADDR - 1:0] addr3;
-
     output reg [`WORD_SIZE - 1:0] data1;
     output reg [`WORD_SIZE - 1:0] data2;
     input [`WORD_SIZE - 1:0] data3;

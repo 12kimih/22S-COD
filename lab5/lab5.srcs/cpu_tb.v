@@ -17,8 +17,22 @@ module cpu_tb;
     wire is_halted;                      // HLT indicator
 
     // instantiate the unit under test
-    cpu UUT (readM, writeM, address, data, inputReady, reset_n, clk, num_inst, output_port, is_halted);
-    memory memory_unit (readM, writeM, address, data, inputReady);
+    cpu cpu_unit (.clk(clk),
+                  .reset_n(reset_n),
+                  .readM(readM),
+                  .writeM(writeM),
+                  .inputReady(inputReady),
+                  .address(address),
+                  .data(data),
+                  .num_inst(num_inst),
+                  .output_port(output_port),
+                  .is_halted(is_halted));
+
+    memory memory_unit (.readM(readM),
+                        .writeM(writeM),
+                        .inputReady(inputReady),
+                        .address(address),
+                        .data(data));
 
     // initialize inputs
     initial begin
@@ -135,7 +149,7 @@ module cpu_tb;
             if (TestPassed[i] == 1)
                 Passed = Passed + 1;
             else
-                $display("Test #%s : %s", TestID[i], (TestPassed[i] == = 0) ? "Wrong" : "No Result");
+                $display("Test #%s : %s", TestID[i], (TestPassed[i] === 0) ? "Wrong" : "No Result");
         end
         if (Passed == `NUM_TEST)
             $display("All Pass!");
