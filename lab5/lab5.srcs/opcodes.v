@@ -49,6 +49,6 @@
 `define STATE_EX  3'd2
 `define STATE_MEM 3'd3
 `define STATE_WB  3'd4
-`define STATE_INI 3'd7
+`define STATE_ERR 3'd7
 
 `endif

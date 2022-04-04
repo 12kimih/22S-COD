@@ -23,6 +23,6 @@
 
 `define ALUOP_SIZE  4
 `define STATE_SIZE  3
-`define SIGSET_SIZE 23 // `STATE_SIZE + `ALUOP_SIZE + 16
+`define SIGSET_SIZE 25 // `STATE_SIZE + `ALUOP_SIZE + 18
 
 `endif
