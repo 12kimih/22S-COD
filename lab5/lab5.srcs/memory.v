@@ -21,6 +21,7 @@ module memory (
 
     // model the read process
     assign data = readM ? outputData : `WORD_SIZE'bz;
+
     always begin
         inputReady = 0;
         outputData = `WORD_SIZE'bz;

@@ -40,7 +40,9 @@ module RF (
             rf[3] <= `WORD_SIZE'b0;
         end
         else begin
-            rf[addr3] <= write ? data3 : rf[addr3];
+            if (write) begin
+                rf[addr3] <= data3;
+            end
         end
     end
 endmodule

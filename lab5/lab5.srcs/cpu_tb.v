@@ -49,10 +49,10 @@ module cpu_tb;
 
     initial #(`PERIOD1 * 10000) -> testbench_finish; // Only 10,000 cycles are allowed.
 
-    reg [`TESTID_SIZE * 8 - 1:0] TestID [`NUM_TEST - 1:0];
-    reg [`WORD_SIZE - 1:0] TestNumInst [`NUM_TEST - 1:0];
-    reg [`WORD_SIZE - 1:0] TestAns [`NUM_TEST - 1:0];
-    reg TestPassed [`NUM_TEST - 1:0];
+    reg [`TESTID_SIZE * 8 - 1:0] TestID [0:`NUM_TEST - 1];
+    reg [`WORD_SIZE - 1:0] TestNumInst [0:`NUM_TEST - 1];
+    reg [`WORD_SIZE - 1:0] TestAns [0:`NUM_TEST - 1];
+    reg TestPassed [0:`NUM_TEST - 1];
 
     initial begin
         TestID[0] <= "1-1"; TestNumInst[0] <= 16'h0003; TestAns[0] <= 16'h0000; TestPassed[0] <= 1'bx;
@@ -142,6 +142,7 @@ module cpu_tb;
     reg [`WORD_SIZE - 1:0] Passed;
 
     initial Passed <= 0;
+
     initial @(testbench_finish) begin
         $display("Clock #%d", num_clock);
         $display("The testbench is finished. Summarizing...");
