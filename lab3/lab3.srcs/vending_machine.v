@@ -1,3 +1,5 @@
+`timescale 100ps / 100ps
+
 `include "vending_machine_def.v"
 
 module vending_machine (

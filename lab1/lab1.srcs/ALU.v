@@ -1,3 +1,5 @@
+`timescale 100ps / 100ps
+
 `define OP_ADD  4'd0
 `define OP_SUB  4'd1
 `define OP_ID   4'd2
@@ -25,11 +27,9 @@ module ALU (
     );
 
     input [3:0] OP;
-
     input [15:0] A;
     input [15:0] B;
     input Cin;
-
     output reg [15:0] C;
     output reg Cout;
 
