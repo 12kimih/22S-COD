@@ -6,15 +6,15 @@ module cpu_tb_full;
     reg clk;     // clock
     reg reset_n; // active-low reset
 
-    wire i_readM;                      // enable memory read
-    wire d_readM;                      // enable memory read
-    wire d_writeM;                     // enable memory write
-    wire i_inputReady;                 // if memory read is done
-    wire d_inputReady;                 // if memory read is done
-    wire [`WORD_SIZE - 1:0] i_address; // memory inout data address
-    wire [`WORD_SIZE - 1:0] d_address; // memory inout data address
-    wire [`WORD_SIZE - 1:0] i_data;    // memory inout data
-    wire [`WORD_SIZE - 1:0] d_data;    // memory inout data
+    wire i_readM;                      // enable instruction memory read
+    wire d_readM;                      // enable data memory read
+    wire d_writeM;                     // enable data memory write
+    wire i_inputReady;                 // if instruction memory read is done
+    wire d_inputReady;                 // if data memory read is done
+    wire [`WORD_SIZE - 1:0] i_address; // instruction memory inout data address
+    wire [`WORD_SIZE - 1:0] d_address; // data memory inout data address
+    wire [`WORD_SIZE - 1:0] i_data;    // instruction memory inout data
+    wire [`WORD_SIZE - 1:0] d_data;    // data memory inout data
 
     wire [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
     wire [`WORD_SIZE - 1:0] output_port; // WWD output port

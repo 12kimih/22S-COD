@@ -6,10 +6,10 @@ module cpu_tb_5inst;
     reg clk;     // clock
     reg reset_n; // active-low reset
 
-    wire readM;                      // enable memory read
-    reg inputReady;                  // if memory read is done
-    wire [`WORD_SIZE - 1:0] address; // memory inout data address
-    wire [`WORD_SIZE - 1:0] data;    // memory inout data
+    wire readM;                      // enable instruction memory read
+    reg inputReady;                  // if instruction memory read is done
+    wire [`WORD_SIZE - 1:0] address; // instruction memory inout data address
+    wire [`WORD_SIZE - 1:0] data;    // instruction memory inout data
 
     wire [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
     wire [`WORD_SIZE - 1:0] output_port; // WWD output port

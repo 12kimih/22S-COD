@@ -23,15 +23,15 @@ module cpu (
     input clk;     // clock
     input reset_n; // active-low reset
 
-    output i_readM;                      // enable memory read
-    output d_readM;                      // enable memory read
-    output d_writeM;                     // enable memory write
-    input i_inputReady;                  // if memory read is done
-    input d_inputReady;                  // if memory read is done
-    output [`WORD_SIZE - 1:0] i_address; // memory inout data address
-    output [`WORD_SIZE - 1:0] d_address; // memory inout data address
-    inout [`WORD_SIZE - 1:0] i_data;     // memory inout data
-    inout [`WORD_SIZE - 1:0] d_data;     // memory inout data
+    output i_readM;                      // enable instruction memory read
+    output d_readM;                      // enable data memory read
+    output d_writeM;                     // enable data memory write
+    input i_inputReady;                  // if instruction memory read is done
+    input d_inputReady;                  // if data memory read is done
+    output [`WORD_SIZE - 1:0] i_address; // instruction memory inout data address
+    output [`WORD_SIZE - 1:0] d_address; // data memory inout data address
+    inout [`WORD_SIZE - 1:0] i_data;     // instruction memory inout data
+    inout [`WORD_SIZE - 1:0] d_data;     // data memory inout data
 
     output [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
     output [`WORD_SIZE - 1:0] output_port; // WWD output port
