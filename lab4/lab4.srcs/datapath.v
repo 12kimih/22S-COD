@@ -149,12 +149,13 @@ module datapath (
     // >>> ALU >>>
     assign aluin1 = regdata1;
     assign aluin2 = aluin2mux ? extimm : regdata2;
-    assign bcond = aluout[0];
 
     ALU alu (.op(aluop),
              .in1(aluin1),
              .in2(aluin2),
              .out(aluout));
+
+    assign bcond = aluout[0];
     // <<< ALU <<<
 
     // >>> output >>>

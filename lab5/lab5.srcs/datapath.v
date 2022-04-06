@@ -143,12 +143,13 @@ module datapath (
     assign aluin2 = (aluin2mux == 2'd0) ? regdata2 :
            (aluin2mux == 2'd1) ? extimm :
            (aluin2mux == 2'd2) ? `WORD_SIZE'd1 : regdata2;
-    assign bcond = aluout[0];
 
     ALU alu (.op(aluop),
              .in1(aluin1),
              .in2(aluin2),
              .out(aluout));
+
+    assign bcond = aluout[0];
     // <<< ALU <<<
 
     // >>> AOR >>>
