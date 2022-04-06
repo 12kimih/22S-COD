@@ -4,41 +4,35 @@
 `include "opcodes.v"
 
 module ALU (
-        OP,
-        A,
-        B,
-        Cin,
-        C,
-        Cout
+        op,
+        in1,
+        in2,
+        out
     );
 
-    input [`ALUOP_SIZE - 1:0] OP;
-
-    input [`WORD_SIZE - 1:0] A;
-    input [`WORD_SIZE - 1:0] B;
-    input Cin;
-
-    output reg [`WORD_SIZE - 1:0] C;
-    output reg Cout;
+    input [`ALUOP_SIZE - 1:0] op;
+    input [`WORD_SIZE - 1:0] in1;
+    input [`WORD_SIZE - 1:0] in2;
+    output reg [`WORD_SIZE - 1:0] out;
 
     always @(*) begin
-        case (OP)
-            `OP_ADD : {Cout, C} = A + B + Cin;
-            `OP_SUB : {Cout, C} = A - (B + Cin);
-            `OP_ID  : {Cout, C} = {1'b0, A};
-            `OP_NAND: {Cout, C} = {1'b0, ~(A & B)};
-            `OP_NOR : {Cout, C} = {1'b0, ~(A | B)};
-            `OP_XNOR: {Cout, C} = {1'b0, ~(A ^ B)};
-            `OP_NOT : {Cout, C} = {1'b0, ~A};
-            `OP_AND : {Cout, C} = {1'b0, A & B};
-            `OP_OR  : {Cout, C} = {1'b0, A | B};
-            `OP_XOR : {Cout, C} = {1'b0, A ^ B};
-            `OP_LRS : {Cout, C} = {1'b0, 1'b0, A[15:1]};
-            `OP_ARS : {Cout, C} = {1'b0, A[15], A[15:1]};
-            `OP_RR  : {Cout, C} = {1'b0, A[0], A[15:1]};
-            `OP_LLS : {Cout, C} = {1'b0, A[14:0], 1'b0};
-            `OP_ALS : {Cout, C} = {1'b0, A[14:0], 1'b0};
-            `OP_RL  : {Cout, C} = {1'b0, A[14:0], A[15]};
+        case (op)
+            `ALUOP_ADD: out = in1 + in2;
+            `ALUOP_SUB: out = in1 - in2;
+            `ALUOP_AND: out = in1 & in2;
+            `ALUOP_OR : out = in1 | in2;
+            `ALUOP_XOR: out = in1 ^ in2;
+            `ALUOP_NOT: out = ~in1;
+            `ALUOP_TCP: out = -in1;
+            `ALUOP_LLS: out = {in1[`WORD_SIZE - 2:0], 1'b0};
+            `ALUOP_LRS: out = {1'b0, in1[`WORD_SIZE - 1:1]};
+            `ALUOP_ARS: out = {in1[`WORD_SIZE - 1], in1[`WORD_SIZE - 1:1]};
+            `ALUOP_SNE: out = (in1 != in2) ? `WORD_SIZE'b1 : `WORD_SIZE'b0;
+            `ALUOP_SEQ: out = (in1 == in2) ? `WORD_SIZE'b1 : `WORD_SIZE'b0;
+            `ALUOP_SGZ: out = ($signed(in1) > `WORD_SIZE'sb0) ? `WORD_SIZE'b1 : `WORD_SIZE'b0;
+            `ALUOP_SLZ: out = ($signed(in1) < `WORD_SIZE'sb0) ? `WORD_SIZE'b1 : `WORD_SIZE'b0;
+            `ALUOP_ID1: out = in1;
+            `ALUOP_ID2: out = in2;
         endcase
     end
 endmodule

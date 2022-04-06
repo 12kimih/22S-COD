@@ -2,7 +2,7 @@
 
 `include "constants.v"
 
-module cpu_tb;
+module cpu_tb_5inst;
     reg clk;     // clock
     reg reset_n; // active-low reset
 
@@ -17,14 +17,20 @@ module cpu_tb;
     reg [`WORD_SIZE - 1:0] outputData; // memory read data
 
     // instantiate the unit under test
-    cpu UUT (.clk(clk),
-             .reset_n(reset_n),
-             .readM(readM),
-             .inputReady(inputReady),
-             .address(address),
-             .data(data),
-             .num_inst(num_inst),
-             .output_port(output_port));
+    cpu cpu_unit (.clk(clk),
+                  .reset_n(reset_n),
+                  .i_readM(readM),
+                  .d_readM(),
+                  .d_writeM(),
+                  .i_inputReady(inputReady),
+                  .d_inputReady(),
+                  .i_address(address),
+                  .d_address(),
+                  .i_data(data),
+                  .d_data(),
+                  .num_inst(num_inst),
+                  .output_port(output_port),
+                  .is_halted());
 
     // initialize inputs
     initial begin
