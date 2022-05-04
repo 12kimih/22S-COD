@@ -6,14 +6,18 @@ module cpu_tb_full;
     reg clk;     // clock
     reg reset_n; // active-low reset
 
+    // instruction memory interface
+    wire i_inputReady;                 // if instruction memory read is done
     wire i_readM;                      // enable instruction memory read
+    wire i_writeM;                     // enable instruction memory write
+    wire [`WORD_SIZE - 1:0] i_address; // instruction memory inout data address
+    wire [`WORD_SIZE - 1:0] i_data;    // instruction memory inout data
+
+    // data memory interface
+    wire d_inputReady;                 // if data memory read is done
     wire d_readM;                      // enable data memory read
     wire d_writeM;                     // enable data memory write
-    wire i_inputReady;                 // if instruction memory read is done
-    wire d_inputReady;                 // if data memory read is done
-    wire [`WORD_SIZE - 1:0] i_address; // instruction memory inout data address
     wire [`WORD_SIZE - 1:0] d_address; // data memory inout data address
-    wire [`WORD_SIZE - 1:0] i_data;    // instruction memory inout data
     wire [`WORD_SIZE - 1:0] d_data;    // data memory inout data
 
     wire [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
@@ -23,21 +27,22 @@ module cpu_tb_full;
     // instantiate the unit under test
     cpu cpu_unit (.clk(clk),
                   .reset_n(reset_n),
+                  .i_inputReady(i_inputReady),
                   .i_readM(i_readM),
+                  .i_writeM(i_writeM),
+                  .i_address(i_address),
+                  .i_data(i_data),
+                  .d_inputReady(d_inputReady),
                   .d_readM(d_readM),
                   .d_writeM(d_writeM),
-                  .i_inputReady(i_inputReady),
-                  .d_inputReady(d_inputReady),
-                  .i_address(i_address),
                   .d_address(d_address),
-                  .i_data(i_data),
                   .d_data(d_data),
                   .num_inst(num_inst),
                   .output_port(output_port),
                   .is_halted(is_halted));
 
     memory i_memory_unit (.readM(i_readM),
-                          .writeM(),
+                          .writeM(i_writeM),
                           .inputReady(i_inputReady),
                           .address(i_address),
                           .data(i_data));

@@ -6,9 +6,9 @@ module cpu_tb;
     reg clk;     // clock
     reg reset_n; // active-low reset
 
+    wire inputReady;                 // if memory read is done
     wire readM;                      // enable memory read
     wire writeM;                     // enable memory write
-    wire inputReady;                 // if memory read is done
     wire [`WORD_SIZE - 1:0] address; // memory inout data address
     wire [`WORD_SIZE - 1:0] data;    // memory inout data
 
@@ -19,18 +19,18 @@ module cpu_tb;
     // instantiate the unit under test
     cpu cpu_unit (.clk(clk),
                   .reset_n(reset_n),
+                  .inputReady(inputReady),
                   .readM(readM),
                   .writeM(writeM),
-                  .inputReady(inputReady),
                   .address(address),
                   .data(data),
                   .num_inst(num_inst),
                   .output_port(output_port),
                   .is_halted(is_halted));
 
-    memory memory_unit (.readM(readM),
+    memory memory_unit (.inputReady(inputReady),
+                        .readM(readM),
                         .writeM(writeM),
-                        .inputReady(inputReady),
                         .address(address),
                         .data(data));
 

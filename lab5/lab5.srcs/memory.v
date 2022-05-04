@@ -3,16 +3,16 @@
 `include "constants.v"
 
 module memory (
+        inputReady,
         readM,
         writeM,
-        inputReady,
         address,
         data
     );
 
+    output reg inputReady;            // if memory read is done
     input readM;                      // enable memory read
     input writeM;                     // enable memory write
-    output reg inputReady;            // if memory read is done
     input [`WORD_SIZE - 1:0] address; // memory inout data address
     inout [`WORD_SIZE - 1:0] data;    // memory inout data
 

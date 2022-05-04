@@ -6,27 +6,28 @@ module cpu_tb_5inst;
     reg clk;     // clock
     reg reset_n; // active-low reset
 
-    wire readM;                      // enable instruction memory read
     reg inputReady;                  // if instruction memory read is done
+    wire readM;                      // enable instruction memory read
     wire [`WORD_SIZE - 1:0] address; // instruction memory inout data address
     wire [`WORD_SIZE - 1:0] data;    // instruction memory inout data
 
     wire [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
     wire [`WORD_SIZE - 1:0] output_port; // WWD output port
 
-    reg [`WORD_SIZE - 1:0] outputData; // memory read data
+    reg [`WORD_SIZE - 1:0] outputData;
 
     // instantiate the unit under test
     cpu cpu_unit (.clk(clk),
                   .reset_n(reset_n),
+                  .i_inputReady(inputReady),
                   .i_readM(readM),
+                  .i_writeM(),
+                  .i_address(address),
+                  .i_data(data),
+                  .d_inputReady(),
                   .d_readM(),
                   .d_writeM(),
-                  .i_inputReady(inputReady),
-                  .d_inputReady(),
-                  .i_address(address),
                   .d_address(),
-                  .i_data(data),
                   .d_data(),
                   .num_inst(num_inst),
                   .output_port(output_port),
@@ -49,6 +50,7 @@ module cpu_tb_5inst;
 
     // model the read process for the memory device
     assign data = readM ? outputData : `WORD_SIZE'bz;
+
     always begin
         outputData = `WORD_SIZE'bz;
         #`PERIOD1;

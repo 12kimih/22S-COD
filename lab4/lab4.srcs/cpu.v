@@ -6,14 +6,15 @@
 module cpu (
         clk,
         reset_n,
+        i_inputReady,
         i_readM,
+        i_writeM,
+        i_address,
+        i_data,
+        d_inputReady,
         d_readM,
         d_writeM,
-        i_inputReady,
-        d_inputReady,
-        i_address,
         d_address,
-        i_data,
         d_data,
         num_inst,
         output_port,
@@ -23,14 +24,18 @@ module cpu (
     input clk;     // clock
     input reset_n; // active-low reset
 
+    // instruction memory interface
+    input i_inputReady;                  // if instruction memory read is done
     output i_readM;                      // enable instruction memory read
+    output i_writeM;                     // enable instruction memory write
+    output [`WORD_SIZE - 1:0] i_address; // instruction memory inout data address
+    inout [`WORD_SIZE - 1:0] i_data;     // instruction memory inout data
+
+    // data memory interface
+    input d_inputReady;                  // if data memory read is done
     output d_readM;                      // enable data memory read
     output d_writeM;                     // enable data memory write
-    input i_inputReady;                  // if instruction memory read is done
-    input d_inputReady;                  // if data memory read is done
-    output [`WORD_SIZE - 1:0] i_address; // instruction memory inout data address
     output [`WORD_SIZE - 1:0] d_address; // data memory inout data address
-    inout [`WORD_SIZE - 1:0] i_data;     // instruction memory inout data
     inout [`WORD_SIZE - 1:0] d_data;     // data memory inout data
 
     output [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
@@ -63,12 +68,12 @@ module cpu (
                             .branch(branch),
                             .wwd(wwd),
                             .hlt(is_halted),
-                            .i_memread(i_readM),
                             .i_inputReady(i_inputReady),
-                            .d_inputReady(d_inputReady),
+                            .i_memread(i_readM),
                             .i_address(i_address),
-                            .d_address(d_address),
                             .i_data(i_data),
+                            .d_inputReady(d_inputReady),
+                            .d_address(d_address),
                             .d_data(d_data),
                             .num_inst(num_inst),
                             .output_port(output_port));

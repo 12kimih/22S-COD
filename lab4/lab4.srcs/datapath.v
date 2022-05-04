@@ -18,12 +18,12 @@ module datapath (
         branch,
         wwd,
         hlt,
-        i_memread,
         i_inputReady,
-        d_inputReady,
+        i_memread,
         i_address,
-        d_address,
         i_data,
+        d_inputReady,
+        d_address,
         d_data,
         num_inst,
         output_port
@@ -46,12 +46,15 @@ module datapath (
     input wwd;                       // if current instruction is WWD
     input hlt;                       // if current instruction is HLT
 
-    output reg i_memread;                // enable instruction memory read
+    // instruction memory interface
     input i_inputReady;                  // if instruction memory read is done
-    input d_inputReady;                  // if data memory read is done
+    output reg i_memread;                // enable instruction memory read
     output [`WORD_SIZE - 1:0] i_address; // instruction memory inout data address
-    output [`WORD_SIZE - 1:0] d_address; // data memory inout data address
     inout [`WORD_SIZE - 1:0] i_data;     // instruction memory inout data
+
+    // data memory interface
+    input d_inputReady;                  // if data memory read is done
+    output [`WORD_SIZE - 1:0] d_address; // data memory inout data address
     inout [`WORD_SIZE - 1:0] d_data;     // data memory inout data
 
     output reg [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
