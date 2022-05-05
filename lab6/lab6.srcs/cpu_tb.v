@@ -38,7 +38,7 @@ module cpu_tb;
                   .output_port(output_port),
                   .is_halted(is_halted));
 
-    Memory memory_unit (.clk(clk),
+    Memory memory_unit (.clk(~clk),
                         .reset_n(reset_n),
                         .i_readM(i_readM),
                         .i_writeM(i_writeM),
