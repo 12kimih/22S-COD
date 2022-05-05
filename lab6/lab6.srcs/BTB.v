@@ -8,7 +8,7 @@ module BTB (
         pc,
         pcplusone,
         predpc,
-        exmem_bubble,
+        exmem_nop,
         exmem_pc,
         exmem_nextpc
     );
@@ -20,7 +20,7 @@ module BTB (
     input [`WORD_SIZE - 1:0] pcplusone;
     output [`WORD_SIZE - 1:0] predpc;
 
-    input exmem_bubble;
+    input exmem_nop;
     input [`WORD_SIZE - 1:0] exmem_pc;
     input [`WORD_SIZE - 1:0] exmem_nextpc;
 
@@ -37,7 +37,7 @@ module BTB (
             end
         end
         else begin
-            if (!exmem_bubble) begin
+            if (!exmem_nop) begin
                 btb[exmem_pc[`BTB_ADDR - 1:0]] <= {exmem_pc[`WORD_SIZE - 1-:`BTB_TAG], 1'b1, exmem_nextpc};
             end
         end
