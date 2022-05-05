@@ -8,176 +8,518 @@ module datapath (
         reset_n,
         opcode,
         func,
-        pcmux,
-        d_memwrite,
+        nextpc_mux,
+        use_regaddr1,
+        use_regaddr2,
         regwrite,
-        regaddr3mux,
-        regdata3mux,
+        regaddr3_mux,
+        regdata3_mux,
         aluop,
-        aluin2mux,
+        aluin2_mux,
+        memread,
+        memwrite,
         branch,
         wwd,
         hlt,
-        i_inputReady,
-        i_memread,
+        i_readM,
+        i_writeM,
         i_address,
         i_data,
-        d_inputReady,
+        d_readM,
+        d_writeM,
         d_address,
         d_data,
         num_inst,
-        output_port
+        output_port,
+        is_halted
     );
 
     input clk;     // clock
     input reset_n; // active-low reset
 
+    // control interface
     output [`OPCODE_SIZE - 1:0] opcode; // operation code of current instruction
     output [`FUNC_SIZE - 1:0] func;     // function of current R-format instruction
 
-    input [1:0] pcmux;               // PC mux [0:pcplusone|1:{PC[15:12], IR[11:0]}|2:regdata1]
-    input d_memwrite;                // enable data memory write
+    input [1:0] nextpc_mux;          // next pc mux [0:pcplusone|1:{pc[15:12], target}|2:regdata1]
+    input use_regaddr1;              // if current instruction uses regaddr1
+    input use_regaddr2;              // if current instruction uses regaddr2
     input regwrite;                  // enable register write
-    input [1:0] regaddr3mux;         // register address 3 mux [0:IR[9:8]|1:IR[7:6]|2:`REG_ADDR'd2]
-    input [1:0] regdata3mux;         // register data 3 mux [0:aluout|1:MDR|2:pcplusone]
-    input [`ALUOP_SIZE - 1:0] aluop; // ALU operation
-    input aluin2mux;                 // ALU input 2 [0:regdata2|1:extimm]
+    input [1:0] regaddr3_mux;        // register address 3 mux [0:ir[9:8]|1:ir[7:6]|2:`REG_ADDR'd2]
+    input [1:0] regdata3_mux;        // register data 3 mux [0:aluout|1:mdr|2:pcplusone]
+    input [`ALUOP_SIZE - 1:0] aluop; // alu operation
+    input aluin2_mux;                // alu input 2 mux [0:regdata2|1:extimm]
+    input memread;                   // enable data memory read
+    input memwrite;                  // enable data memory write
     input branch;                    // if current instruction is branch
     input wwd;                       // if current instruction is WWD
     input hlt;                       // if current instruction is HLT
 
     // instruction memory interface
-    input i_inputReady;                  // if instruction memory read is done
-    output reg i_memread;                // enable instruction memory read
+    output i_readM;                      // enable instruction memory read
+    output i_writeM;                     // enable instruction memory write
     output [`WORD_SIZE - 1:0] i_address; // instruction memory inout data address
     inout [`WORD_SIZE - 1:0] i_data;     // instruction memory inout data
 
     // data memory interface
-    input d_inputReady;                  // if data memory read is done
+    output d_readM;                      // enable data memory read
+    output d_writeM;                     // enable data memory write
     output [`WORD_SIZE - 1:0] d_address; // data memory inout data address
     inout [`WORD_SIZE - 1:0] d_data;     // data memory inout data
 
+    // cpu interface
     output reg [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
     output reg [`WORD_SIZE - 1:0] output_port; // WWD output port
+    output reg is_halted;                      // HLT indicator
 
-    reg [`WORD_SIZE - 1:0] PC;
-    reg [`INST_SIZE - 1:0] IR;
-    reg [`WORD_SIZE - 1:0] MDR;
-
+    // pc registers
+    reg [`WORD_SIZE - 1:0] pc;
     wire [`WORD_SIZE - 1:0] pcplusone;
+
+    // ifid registers
+    reg [`WORD_SIZE - 1:0] ifid_pc;
+    reg [`WORD_SIZE - 1:0] ifid_pcplusone;
+    reg [`WORD_SIZE - 1:0] ifid_predpc;
+    reg ifid_bubble;
+
+    reg [`INST_SIZE - 1:0] ifid_ir;
 
     wire [`REG_ADDR - 1:0] regaddr1;
     wire [`REG_ADDR - 1:0] regaddr2;
     wire [`REG_ADDR - 1:0] regaddr3;
     wire [`WORD_SIZE - 1:0] regdata1;
     wire [`WORD_SIZE - 1:0] regdata2;
-    wire [`WORD_SIZE - 1:0] regdata3;
-
     wire [`WORD_SIZE - 1:0] extimm;
+    wire [`TARGET_SIZE - 1:0] target;
+
+    // idex registers
+    reg [`WORD_SIZE - 1:0] idex_pc;
+    reg [`WORD_SIZE - 1:0] idex_pcplusone;
+    reg [`WORD_SIZE - 1:0] idex_predpc;
+    wire [`WORD_SIZE - 1:0] idex_nextpc;
+    reg idex_bubble;
+
+    reg [1:0] idex_nextpc_mux;
+    reg idex_regwrite;
+    reg [1:0] idex_regdata3_mux;
+    reg [`ALUOP_SIZE - 1:0] idex_aluop;
+    reg idex_aluin2_mux;
+    reg idex_memread;
+    reg idex_memwrite;
+    reg idex_branch;
+    reg idex_wwd;
+    reg idex_hlt;
+
+    reg [`REG_ADDR - 1:0] idex_regaddr1;
+    reg [`REG_ADDR - 1:0] idex_regaddr2;
+    reg [`REG_ADDR - 1:0] idex_regaddr3;
+    reg [`WORD_SIZE - 1:0] idex_regdata1;
+    reg [`WORD_SIZE - 1:0] idex_regdata2;
+    reg [`WORD_SIZE - 1:0] idex_extimm;
+    reg [`TARGET_SIZE - 1:0] idex_target;
 
     wire [`WORD_SIZE - 1:0] aluin1;
     wire [`WORD_SIZE - 1:0] aluin2;
     wire [`WORD_SIZE - 1:0] aluout;
     wire bcond;
 
-    // >>> PC >>>
+    // exmem registers
+    reg [`WORD_SIZE - 1:0] exmem_pc;
+    reg [`WORD_SIZE - 1:0] exmem_pcplusone;
+    reg [`WORD_SIZE - 1:0] exmem_predpc;
+    reg [`WORD_SIZE - 1:0] exmem_nextpc;
+    reg exmem_bubble;
+
+    reg exmem_regwrite;
+    reg [1:0] exmem_regdata3_mux;
+    reg exmem_memread;
+    reg exmem_memwrite;
+    reg exmem_wwd;
+    reg exmem_hlt;
+
+    reg [`REG_ADDR - 1:0] exmem_regaddr3;
+    reg [`WORD_SIZE - 1:0] exmem_regdata1;
+    reg [`WORD_SIZE - 1:0] exmem_regdata2;
+    reg [`WORD_SIZE - 1:0] exmem_aluout;
+
+    // memwb registers
+    reg [`WORD_SIZE - 1:0] memwb_pcplusone;
+    reg memwb_bubble;
+
+    reg memwb_regwrite;
+    reg [1:0] memwb_regdata3_mux;
+    reg memwb_wwd;
+    reg memwb_hlt;
+
+    reg [`REG_ADDR - 1:0] memwb_regaddr3;
+    reg [`WORD_SIZE - 1:0] memwb_regdata1;
+    wire [`WORD_SIZE - 1:0] memwb_regdata3;
+    reg [`WORD_SIZE - 1:0] memwb_aluout;
+    reg [`WORD_SIZE - 1:0] memwb_mdr;
+
+    // BTB wires
+    wire [`WORD_SIZE - 1:0] predpc;
+
+    // hazard wires
+    wire pc_stall;
+    wire ifid_stall;
+    wire pc_flush;
+    wire ifid_flush;
+    wire idex_flush;
+    wire exmem_flush;
+
+    BTB btb_unit (.clk(clk),
+                  .reset_n(reset_n),
+                  .pc(pc),
+                  .pcplusone(pcplusone),
+                  .predpc(predpc),
+                  .exmem_pc(exmem_pc),
+                  .exmem_nextpc(exmem_nextpc),
+                  .exmem_bubble(exmem_bubble));
+
+    hazard hazard_unit (.regaddr1(regaddr1),
+                        .regaddr2(regaddr2),
+                        .idex_regaddr3(idex_regaddr3),
+                        .exmem_regaddr3(exmem_regaddr3),
+                        .memwb_regaddr3(memwb_regaddr3),
+                        .use_regaddr1(use_regaddr1),
+                        .use_regaddr2(use_regaddr2),
+                        .idex_regwrite(idex_regwrite),
+                        .exmem_regwrite(exmem_regwrite),
+                        .memwb_regwrite(memwb_regwrite),
+                        .pc_stall(pc_stall),
+                        .ifid_stall(ifid_stall),
+                        .exmem_predpc(exmem_predpc),
+                        .exmem_nextpc(exmem_nextpc),
+                        .hlt(exmem_hlt || memwb_hlt),
+                        .pc_flush(pc_flush),
+                        .ifid_flush(ifid_flush),
+                        .idex_flush(idex_flush),
+                        .exmem_flush(exmem_flush));
+
+    // >>> pc >>>
     always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            PC <= -`WORD_SIZE'd1;
+            pc <= -`WORD_SIZE'd1;
         end
         else begin
-            if (!hlt) begin
-                PC <= (branch && bcond) ? pcplusone + extimm :
-                   (pcmux == 2'd0) ? pcplusone :
-                   (pcmux == 2'd1) ? {PC[15:12], IR[11:0]} :
-                   (pcmux == 2'd2) ? regdata1 : pcplusone;
+            if (pc_flush) begin
+                pc <= memwb_hlt ? pc : exmem_nextpc;
+            end
+            else if (pc_stall) begin
+                pc <= pc;
+            end
+            else begin
+                pc <= predpc;
             end
         end
     end
 
-    assign pcplusone = PC + `WORD_SIZE'd1;
-    // <<< PC <<<
+    assign pcplusone = pc + `WORD_SIZE'd1;
+    // <<< pc <<<
 
-    // >>> IR >>>
-    always @(posedge i_inputReady or posedge clk or negedge reset_n) begin
+    // >>> ifid >>>
+    always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            IR <= `INST_SIZE'b0;
-            i_memread <= 1'b0;
+            ifid_pc <= `WORD_SIZE'b0;
+            ifid_pcplusone <= `WORD_SIZE'b0;
+            ifid_predpc <= `WORD_SIZE'b0;
+            ifid_bubble <= 1'b1;
+
+            ifid_ir <= `INST_SIZE'b0;
         end
         else begin
-            IR <= i_inputReady ? i_data : `INST_SIZE'b0;
-            i_memread <= i_inputReady ? 1'b0 : 1'b1;
+            if (ifid_flush) begin
+                ifid_pc <= `WORD_SIZE'b0;
+                ifid_pcplusone <= `WORD_SIZE'b0;
+                ifid_predpc <= `WORD_SIZE'b0;
+                ifid_bubble <= 1'b1;
+
+                ifid_ir <= `INST_SIZE'b0;
+            end
+            else if (ifid_stall) begin
+                ifid_pc <= ifid_pc;
+                ifid_pcplusone <= ifid_pcplusone;
+                ifid_predpc <= ifid_predpc;
+                ifid_bubble <= ifid_bubble;
+
+                ifid_ir <= ifid_ir;
+            end
+            else begin
+                ifid_pc <= pc;
+                ifid_pcplusone <= pcplusone;
+                ifid_predpc <= predpc;
+                ifid_bubble <= 1'b0;
+
+                ifid_ir <= i_data;
+            end
         end
     end
-    // <<< IR <<<
 
-    // >>> MDR >>>
-    always @(posedge d_inputReady or posedge clk or negedge reset_n) begin
-        if (!reset_n) begin
-            MDR <= `WORD_SIZE'b0;
-        end
-        else begin
-            MDR <= d_inputReady ? d_data : `WORD_SIZE'b0;
-        end
-    end
-    // <<< MDR <<<
+    assign regaddr1 = ifid_ir[11:10];
+    assign regaddr2 = ifid_ir[9:8];
+    assign regaddr3 = (regaddr3_mux == 2'd0) ? ifid_ir[9:8] :
+           (regaddr3_mux == 2'd1) ? ifid_ir[7:6] :
+           (regaddr3_mux == 2'd2) ? `REG_ADDR'd2 : ifid_ir[9:8];
 
-    // >>> RF >>>
-    assign regaddr1 = IR[11:10];
-    assign regaddr2 = IR[9:8];
-    assign regaddr3 = (regaddr3mux == 2'd0) ? IR[9:8] :
-           (regaddr3mux == 2'd1) ? IR[7:6] :
-           (regaddr3mux == 2'd2) ? `REG_ADDR'd2 : IR[9:8];
-    assign regdata3 = (regdata3mux == 2'd0) ? aluout :
-           (regdata3mux == 2'd1) ? MDR :
-           (regdata3mux == 2'd2) ? pcplusone : aluout;
+    RF rf_unit (.clk(clk),
+                .reset_n(reset_n),
+                .write(memwb_regwrite),
+                .addr1(regaddr1),
+                .addr2(regaddr2),
+                .addr3(memwb_regaddr3),
+                .data1(regdata1),
+                .data2(regdata2),
+                .data3(memwb_regdata3));
 
-    RF rf (.clk(clk),
-           .reset_n(reset_n),
-           .write(regwrite),
-           .addr1(regaddr1),
-           .addr2(regaddr2),
-           .addr3(regaddr3),
-           .data1(regdata1),
-           .data2(regdata2),
-           .data3(regdata3));
-    // <<< RF <<<
-
-    // >>> immediate >>>
-    immediate immediate_unit (.opcode(IR[15:12]),
-                              .imm(IR[7:0]),
+    immediate immediate_unit (.opcode(ifid_ir[15:12]),
+                              .imm(ifid_ir[7:0]),
                               .extimm(extimm));
-    // <<< immediate <<<
 
-    // >>> ALU >>>
-    assign aluin1 = regdata1;
-    assign aluin2 = aluin2mux ? extimm : regdata2;
+    assign target = ifid_ir[11:0];
+    // <<< ifid <<<
 
-    ALU alu (.op(aluop),
-             .in1(aluin1),
-             .in2(aluin2),
-             .out(aluout));
+    // >>> idex >>>
+    always @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            idex_pc <= `WORD_SIZE'b0;
+            idex_pcplusone <= `WORD_SIZE'b0;
+            idex_predpc <= `WORD_SIZE'b0;
+            idex_bubble <= 1'b1;
+
+            idex_nextpc_mux <= 2'd0;
+            idex_regwrite <= 1'b0;
+            idex_regdata3_mux <= 2'd0;
+            idex_aluop <= `ALUOP_ADD;
+            idex_aluin2_mux <= 1'b0;
+            idex_memread <= 1'b0;
+            idex_memwrite <= 1'b0;
+            idex_branch <= 1'b0;
+            idex_wwd <= 1'b0;
+            idex_hlt <= 1'b0;
+
+            idex_regaddr1 <= `REG_ADDR'b0;
+            idex_regaddr2 <= `REG_ADDR'b0;
+            idex_regaddr3 <= `REG_ADDR'b0;
+            idex_regdata1 <= `WORD_SIZE'b0;
+            idex_regdata2 <= `WORD_SIZE'b0;
+            idex_extimm <= `WORD_SIZE'b0;
+            idex_target <= `TARGET_SIZE'b0;
+        end
+        else begin
+            if (idex_flush) begin
+                idex_pc <= `WORD_SIZE'b0;
+                idex_pcplusone <= `WORD_SIZE'b0;
+                idex_predpc <= `WORD_SIZE'b0;
+                idex_bubble <= 1'b1;
+
+                idex_nextpc_mux <= 2'd0;
+                idex_regwrite <= 1'b0;
+                idex_regdata3_mux <= 2'd0;
+                idex_aluop <= `ALUOP_ADD;
+                idex_aluin2_mux <= 1'b0;
+                idex_memread <= 1'b0;
+                idex_memwrite <= 1'b0;
+                idex_branch <= 1'b0;
+                idex_wwd <= 1'b0;
+                idex_hlt <= 1'b0;
+
+                idex_regaddr1 <= `REG_ADDR'b0;
+                idex_regaddr2 <= `REG_ADDR'b0;
+                idex_regaddr3 <= `REG_ADDR'b0;
+                idex_regdata1 <= `WORD_SIZE'b0;
+                idex_regdata2 <= `WORD_SIZE'b0;
+                idex_extimm <= `WORD_SIZE'b0;
+                idex_target <= `TARGET_SIZE'b0;
+            end
+            else begin
+                idex_pc <= ifid_pc;
+                idex_pcplusone <= ifid_pcplusone;
+                idex_predpc <= ifid_predpc;
+                idex_bubble <= ifid_bubble;
+
+                idex_nextpc_mux <= nextpc_mux;
+                idex_regwrite <= regwrite;
+                idex_regdata3_mux <= regdata3_mux;
+                idex_aluop <= aluop;
+                idex_aluin2_mux <= aluin2_mux;
+                idex_memread <= memread;
+                idex_memwrite <= memwrite;
+                idex_branch <= branch;
+                idex_wwd <= wwd;
+                idex_hlt <= hlt;
+
+                idex_regaddr1 <= regaddr1;
+                idex_regaddr2 <= regaddr2;
+                idex_regaddr3 <= regaddr3;
+                idex_regdata1 <= regdata1;
+                idex_regdata2 <= regdata2;
+                idex_extimm <= extimm;
+                idex_target <= target;
+            end
+        end
+    end
+
+    assign idex_nextpc = (idex_branch && bcond) ? idex_pcplusone + idex_extimm :
+           (idex_nextpc_mux == 2'd0) ? idex_pcplusone :
+           (idex_nextpc_mux == 2'd1) ? {idex_pc[15:12], idex_target} :
+           (idex_nextpc_mux == 2'd2) ? idex_regdata1 : idex_pcplusone;
+
+    assign aluin1 = idex_regdata1;
+    assign aluin2 = idex_aluin2_mux ? idex_extimm : idex_regdata2;
+
+    ALU alu_unit (.op(aluop),
+                  .in1(aluin1),
+                  .in2(aluin2),
+                  .out(aluout));
 
     assign bcond = aluout[0];
-    // <<< ALU <<<
+    // <<< idex <<<
+
+    // >>> exmem >>>
+    always @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            exmem_pc <= `WORD_SIZE'b0;
+            exmem_pcplusone <= `WORD_SIZE'b0;
+            exmem_predpc <= `WORD_SIZE'b0;
+            exmem_nextpc <= `WORD_SIZE'b0;
+            exmem_bubble <= 1'b1;
+
+            exmem_regwrite <= 1'b0;
+            exmem_regdata3_mux <= 2'd0;
+            exmem_memread <= 1'b0;
+            exmem_memwrite <= 1'b0;
+            exmem_wwd <= 1'b0;
+            exmem_hlt <= 1'b0;
+
+            exmem_regaddr3 <= `REG_ADDR'b0;
+            exmem_regdata1 <= `WORD_SIZE'b0;
+            exmem_regdata2 <= `WORD_SIZE'b0;
+            exmem_aluout <= `WORD_SIZE'b0;
+        end
+        else begin
+            if (exmem_flush) begin
+                exmem_pc <= `WORD_SIZE'b0;
+                exmem_pcplusone <= `WORD_SIZE'b0;
+                exmem_predpc <= `WORD_SIZE'b0;
+                exmem_nextpc <= `WORD_SIZE'b0;
+                exmem_bubble <= 1'b1;
+
+                exmem_regwrite <= 1'b0;
+                exmem_regdata3_mux <= 2'd0;
+                exmem_memread <= 1'b0;
+                exmem_memwrite <= 1'b0;
+                exmem_wwd <= 1'b0;
+                exmem_hlt <= 1'b0;
+
+                exmem_regaddr3 <= `REG_ADDR'b0;
+                exmem_regdata1 <= `WORD_SIZE'b0;
+                exmem_regdata2 <= `WORD_SIZE'b0;
+                exmem_aluout <= `WORD_SIZE'b0;
+            end
+            else begin
+                exmem_pc <= idex_pc;
+                exmem_pcplusone <= idex_pcplusone;
+                exmem_predpc <= idex_predpc;
+                exmem_nextpc <= idex_nextpc;
+                exmem_bubble <= idex_bubble;
+
+                exmem_regwrite <= idex_regwrite;
+                exmem_regdata3_mux <= idex_regdata3_mux;
+                exmem_memread <= idex_memread;
+                exmem_memwrite <= idex_memwrite;
+                exmem_wwd <= idex_wwd;
+                exmem_hlt <= idex_hlt;
+
+                exmem_regaddr3 <= idex_regaddr3;
+                exmem_regdata1 <= idex_regdata1;
+                exmem_regdata2 <= idex_regdata2;
+                exmem_aluout <= aluout;
+            end
+        end
+    end
+    // <<< exmem <<<
+
+    // >>> memwb >>>
+    always @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            memwb_pcplusone <= `WORD_SIZE'b0;
+            memwb_bubble <= 1'b1;
+
+            memwb_regwrite <= 1'b0;
+            memwb_regdata3_mux <= 2'd0;
+            memwb_wwd <= 1'b0;
+            memwb_hlt <= 1'b0;
+
+            memwb_regaddr3 <= `REG_ADDR'b0;
+            memwb_regdata1 <= `WORD_SIZE'b0;
+            memwb_aluout <= `WORD_SIZE'b0;
+            memwb_mdr <= `WORD_SIZE'b0;
+        end
+        else begin
+            if (memwb_hlt) begin
+                memwb_pcplusone <= `WORD_SIZE'b0;
+                memwb_bubble <= 1'b1;
+
+                memwb_regwrite <= 1'b0;
+                memwb_regdata3_mux <= 2'd0;
+                memwb_wwd <= 1'b0;
+                memwb_hlt <= 1'b1;
+
+                memwb_regaddr3 <= `REG_ADDR'b0;
+                memwb_regdata1 <= `WORD_SIZE'b0;
+                memwb_aluout <= `WORD_SIZE'b0;
+                memwb_mdr <= `WORD_SIZE'b0;
+            end
+            else begin
+                memwb_pcplusone <= exmem_pcplusone;
+                memwb_bubble <= exmem_bubble;
+
+                memwb_regwrite <= exmem_regwrite;
+                memwb_regdata3_mux <= exmem_regdata3_mux;
+                memwb_wwd <= exmem_wwd;
+                memwb_hlt <= exmem_hlt;
+
+                memwb_regaddr3 <= exmem_regaddr3;
+                memwb_regdata1 <= exmem_regdata1;
+                memwb_aluout <= exmem_aluout;
+                memwb_mdr <= d_data;
+            end
+        end
+    end
+
+    assign memwb_regdata3 = (memwb_regdata3_mux == 2'd0) ? memwb_aluout :
+           (memwb_regdata3_mux == 2'd1) ? memwb_mdr :
+           (memwb_regdata3_mux == 2'd2) ? memwb_pcplusone : memwb_aluout;
+    // <<< memwb <<<
 
     // >>> output >>>
-    assign opcode = IR[15:12];
-    assign func = IR[5:0];
+    assign opcode = ifid_ir[15:12];
+    assign func = ifid_ir[5:0];
 
-    assign i_address = PC;
-    assign d_address = aluout;
-    assign d_data = d_memwrite ? regdata2 : `WORD_SIZE'bz;
+    assign i_readM = 1'b1;
+    assign i_writeM = 1'b0;
+    assign i_address = pc;
+    assign d_readM = exmem_memread;
+    assign d_writeM = exmem_memwrite;
+    assign d_address = exmem_aluout;
+    assign d_data = exmem_memwrite ? exmem_regdata2 : `WORD_SIZE'bz;
 
     always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
             num_inst <= -`WORD_SIZE'd1;
             output_port <= `WORD_SIZE'b0;
+            is_halted <= 1'b0;
         end
         else begin
-            num_inst <= num_inst + `WORD_SIZE'd1;
-            if (wwd) begin
-                output_port <= regdata1;
+            if (!memwb_bubble) begin
+                num_inst <= num_inst + `WORD_SIZE'd1;
+            end
+            if (memwb_wwd) begin
+                output_port <= memwb_regdata1;
+            end
+            if (memwb_hlt) begin
+                is_halted <= 1'b1;
             end
         end
     end
