@@ -38,8 +38,8 @@ module control (
     output wwd;                       // if current instruction is WWD
     output hlt;                       // if current instruction is HLT
 
-    reg [`SIGSET_SIZE - 1:0] sigset;
-    wire [`SIGSET_SIZE - 1:0] sigset_default;
+    reg [`CONTROL_SIGSET - 1:0] sigset;
+    wire [`CONTROL_SIGSET - 1:0] sigset_default;
 
     assign sigset_default = {2'd0, 1'b0, 1'b0, 1'b0, 2'd0, 2'd0, `ALUOP_ADD, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0};
 

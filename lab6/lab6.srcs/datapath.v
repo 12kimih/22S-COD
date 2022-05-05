@@ -187,11 +187,11 @@ module datapath (
                         .idex_regwrite(idex_regwrite),
                         .exmem_regwrite(exmem_regwrite),
                         .memwb_regwrite(memwb_regwrite),
-                        .pc_stall(pc_stall),
-                        .ifid_stall(ifid_stall),
                         .exmem_predpc(exmem_predpc),
                         .exmem_nextpc(exmem_nextpc),
                         .hlt(exmem_hlt || memwb_hlt),
+                        .pc_stall(pc_stall),
+                        .ifid_stall(ifid_stall),
                         .pc_flush(pc_flush),
                         .ifid_flush(ifid_flush),
                         .idex_flush(idex_flush),
@@ -200,7 +200,7 @@ module datapath (
     // >>> pc >>>
     always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            pc <= -`WORD_SIZE'd1;
+            pc <= `WORD_SIZE'd0;
         end
         else begin
             if (pc_flush) begin
@@ -368,7 +368,7 @@ module datapath (
     assign aluin1 = idex_regdata1;
     assign aluin2 = idex_aluin2_mux ? idex_extimm : idex_regdata2;
 
-    ALU alu_unit (.op(aluop),
+    ALU alu_unit (.op(idex_aluop),
                   .in1(aluin1),
                   .in2(aluin2),
                   .out(aluout));
@@ -507,7 +507,7 @@ module datapath (
 
     always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            num_inst <= -`WORD_SIZE'd1;
+            num_inst <= `WORD_SIZE'd0;
             output_port <= `WORD_SIZE'b0;
             is_halted <= 1'b0;
         end
