@@ -27,14 +27,11 @@ module hazard (
     // data hazard signals
     input [`REG_ADDR - 1:0] regaddr1;
     input [`REG_ADDR - 1:0] regaddr2;
-
     input [`REG_ADDR - 1:0] idex_regaddr3;
     input [`REG_ADDR - 1:0] exmem_regaddr3;
     input [`REG_ADDR - 1:0] memwb_regaddr3;
-
     input use_regaddr1;
     input use_regaddr2;
-
     input idex_regwrite;
     input exmem_regwrite;
     input memwb_regwrite;

@@ -18,13 +18,36 @@ module cpu_tb;
     wire [`WORD_SIZE - 1:0] d_address; // data memory inout data address
     wire [`WORD_SIZE - 1:0] d_data;    // data memory inout data
 
+    // cpu interface
     wire [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
     wire [`WORD_SIZE - 1:0] output_port; // WWD output port
     wire is_halted;                      // HLT indicator
 
     // instantiate the unit under test
-    cpu UUT (clk, reset_n, i_readM, i_writeM, i_address, i_data, d_readM, d_writeM, d_address, d_data, num_inst, output_port, is_halted);
-    Memory NUUT(!clk, reset_n, i_readM, i_writeM, i_address, i_data, d_readM, d_writeM, d_address, d_data);
+    cpu cpu_unit (.clk(clk),
+                  .reset_n(reset_n),
+                  .i_readM(i_readM),
+                  .i_writeM(i_writeM),
+                  .i_address(i_address),
+                  .i_data(i_data),
+                  .d_readM(d_readM),
+                  .d_writeM(d_writeM),
+                  .d_address(d_address),
+                  .d_data(d_data),
+                  .num_inst(num_inst),
+                  .output_port(output_port),
+                  .is_halted(is_halted));
+
+    Memory memory_unit (.clk(clk),
+                        .reset_n(reset_n),
+                        .i_readM(i_readM),
+                        .i_writeM(i_writeM),
+                        .i_address(i_address),
+                        .i_data(i_data),
+                        .d_readM(d_readM),
+                        .d_writeM(d_writeM),
+                        .d_address(d_address),
+                        .d_data(d_data));
 
     // initialize inputs
     initial begin

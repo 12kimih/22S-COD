@@ -11,13 +11,12 @@ module forward (
         exmem_regaddr3,
         memwb_regwrite,
         memwb_regaddr3,
-        fwd1mux,
-        fwd2mux
+        fwd1_mux,
+        fwd2_mux
     );
 
     input [`REG_ADDR - 1:0] regaddr1;
     input [`REG_ADDR - 1:0] regaddr2;
-
     input idex_regwrite;
     input [`REG_ADDR - 1:0] idex_regaddr3;
     input exmem_regwrite;
@@ -25,36 +24,36 @@ module forward (
     input memwb_regwrite;
     input [`REG_ADDR - 1:0] memwb_regaddr3;
 
-    output reg [1:0] fwd1mux;
-    output reg [1:0] fwd2mux;
+    output reg [1:0] fwd1_mux;
+    output reg [1:0] fwd2_mux;
 
     always @(*) begin
         if (idex_regwrite && regaddr1 == idex_regaddr3) begin
-            fwd1mux = 2'd1;
+            fwd1_mux = 2'd1;
         end
         if (exmem_regwrite && regaddr1 == exmem_regaddr3) begin
-            fwd1mux = 2'd2;
+            fwd1_mux = 2'd2;
         end
         else if (memwb_regwrite && regaddr1 == memwb_regaddr3) begin
-            fwd1mux = 2'd3;
+            fwd1_mux = 2'd3;
         end
         else begin
-            fwd1mux = 2'd0;
+            fwd1_mux = 2'd0;
         end
     end
 
     always @(*) begin
         if (idex_regwrite && regaddr2 == idex_regaddr3) begin
-            fwd2mux = 2'd1;
+            fwd2_mux = 2'd1;
         end
         if (exmem_regwrite && regaddr2 == exmem_regaddr3) begin
-            fwd2mux = 2'd2;
+            fwd2_mux = 2'd2;
         end
         else if (memwb_regwrite && regaddr2 == memwb_regaddr3) begin
-            fwd2mux = 2'd3;
+            fwd2_mux = 2'd3;
         end
         else begin
-            fwd2mux = 2'd0;
+            fwd2_mux = 2'd0;
         end
     end
 endmodule

@@ -77,10 +77,10 @@ module datapath (
     wire [`WORD_SIZE - 1:0] pcplusone;
 
     // ifid registers
+    reg ifid_bubble;
     reg [`WORD_SIZE - 1:0] ifid_pc;
     reg [`WORD_SIZE - 1:0] ifid_pcplusone;
     reg [`WORD_SIZE - 1:0] ifid_predpc;
-    reg ifid_bubble;
 
     reg [`INST_SIZE - 1:0] ifid_ir;
 
@@ -93,11 +93,11 @@ module datapath (
     wire [`TARGET_SIZE - 1:0] target;
 
     // idex registers
+    reg idex_bubble;
     reg [`WORD_SIZE - 1:0] idex_pc;
     reg [`WORD_SIZE - 1:0] idex_pcplusone;
     reg [`WORD_SIZE - 1:0] idex_predpc;
     wire [`WORD_SIZE - 1:0] idex_nextpc;
-    reg idex_bubble;
 
     reg [1:0] idex_nextpc_mux;
     reg idex_regwrite;
@@ -124,11 +124,11 @@ module datapath (
     wire bcond;
 
     // exmem registers
+    reg exmem_bubble;
     reg [`WORD_SIZE - 1:0] exmem_pc;
     reg [`WORD_SIZE - 1:0] exmem_pcplusone;
     reg [`WORD_SIZE - 1:0] exmem_predpc;
     reg [`WORD_SIZE - 1:0] exmem_nextpc;
-    reg exmem_bubble;
 
     reg exmem_regwrite;
     reg [1:0] exmem_regdata3_mux;
@@ -143,8 +143,8 @@ module datapath (
     reg [`WORD_SIZE - 1:0] exmem_aluout;
 
     // memwb registers
-    reg [`WORD_SIZE - 1:0] memwb_pcplusone;
     reg memwb_bubble;
+    reg [`WORD_SIZE - 1:0] memwb_pcplusone;
 
     reg memwb_regwrite;
     reg [1:0] memwb_regdata3_mux;
@@ -173,9 +173,9 @@ module datapath (
                   .pc(pc),
                   .pcplusone(pcplusone),
                   .predpc(predpc),
+                  .exmem_bubble(exmem_bubble),
                   .exmem_pc(exmem_pc),
-                  .exmem_nextpc(exmem_nextpc),
-                  .exmem_bubble(exmem_bubble));
+                  .exmem_nextpc(exmem_nextpc));
 
     hazard hazard_unit (.regaddr1(regaddr1),
                         .regaddr2(regaddr2),
@@ -221,35 +221,35 @@ module datapath (
     // >>> ifid >>>
     always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
+            ifid_bubble <= 1'b1;
             ifid_pc <= `WORD_SIZE'b0;
             ifid_pcplusone <= `WORD_SIZE'b0;
             ifid_predpc <= `WORD_SIZE'b0;
-            ifid_bubble <= 1'b1;
 
             ifid_ir <= `INST_SIZE'b0;
         end
         else begin
             if (ifid_flush) begin
+                ifid_bubble <= 1'b1;
                 ifid_pc <= `WORD_SIZE'b0;
                 ifid_pcplusone <= `WORD_SIZE'b0;
                 ifid_predpc <= `WORD_SIZE'b0;
-                ifid_bubble <= 1'b1;
 
                 ifid_ir <= `INST_SIZE'b0;
             end
             else if (ifid_stall) begin
+                ifid_bubble <= ifid_bubble;
                 ifid_pc <= ifid_pc;
                 ifid_pcplusone <= ifid_pcplusone;
                 ifid_predpc <= ifid_predpc;
-                ifid_bubble <= ifid_bubble;
 
                 ifid_ir <= ifid_ir;
             end
             else begin
+                ifid_bubble <= 1'b0;
                 ifid_pc <= pc;
                 ifid_pcplusone <= pcplusone;
                 ifid_predpc <= predpc;
-                ifid_bubble <= 1'b0;
 
                 ifid_ir <= i_data;
             end
@@ -282,10 +282,10 @@ module datapath (
     // >>> idex >>>
     always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
+            idex_bubble <= 1'b1;
             idex_pc <= `WORD_SIZE'b0;
             idex_pcplusone <= `WORD_SIZE'b0;
             idex_predpc <= `WORD_SIZE'b0;
-            idex_bubble <= 1'b1;
 
             idex_nextpc_mux <= 2'd0;
             idex_regwrite <= 1'b0;
@@ -308,10 +308,10 @@ module datapath (
         end
         else begin
             if (idex_flush) begin
+                idex_bubble <= 1'b1;
                 idex_pc <= `WORD_SIZE'b0;
                 idex_pcplusone <= `WORD_SIZE'b0;
                 idex_predpc <= `WORD_SIZE'b0;
-                idex_bubble <= 1'b1;
 
                 idex_nextpc_mux <= 2'd0;
                 idex_regwrite <= 1'b0;
@@ -333,10 +333,10 @@ module datapath (
                 idex_target <= `TARGET_SIZE'b0;
             end
             else begin
+                idex_bubble <= ifid_bubble;
                 idex_pc <= ifid_pc;
                 idex_pcplusone <= ifid_pcplusone;
                 idex_predpc <= ifid_predpc;
-                idex_bubble <= ifid_bubble;
 
                 idex_nextpc_mux <= nextpc_mux;
                 idex_regwrite <= regwrite;
@@ -379,11 +379,11 @@ module datapath (
     // >>> exmem >>>
     always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
+            exmem_bubble <= 1'b1;
             exmem_pc <= `WORD_SIZE'b0;
             exmem_pcplusone <= `WORD_SIZE'b0;
             exmem_predpc <= `WORD_SIZE'b0;
             exmem_nextpc <= `WORD_SIZE'b0;
-            exmem_bubble <= 1'b1;
 
             exmem_regwrite <= 1'b0;
             exmem_regdata3_mux <= 2'd0;
@@ -399,11 +399,11 @@ module datapath (
         end
         else begin
             if (exmem_flush) begin
+                exmem_bubble <= 1'b1;
                 exmem_pc <= `WORD_SIZE'b0;
                 exmem_pcplusone <= `WORD_SIZE'b0;
                 exmem_predpc <= `WORD_SIZE'b0;
                 exmem_nextpc <= `WORD_SIZE'b0;
-                exmem_bubble <= 1'b1;
 
                 exmem_regwrite <= 1'b0;
                 exmem_regdata3_mux <= 2'd0;
@@ -418,11 +418,11 @@ module datapath (
                 exmem_aluout <= `WORD_SIZE'b0;
             end
             else begin
+                exmem_bubble <= idex_bubble;
                 exmem_pc <= idex_pc;
                 exmem_pcplusone <= idex_pcplusone;
                 exmem_predpc <= idex_predpc;
                 exmem_nextpc <= idex_nextpc;
-                exmem_bubble <= idex_bubble;
 
                 exmem_regwrite <= idex_regwrite;
                 exmem_regdata3_mux <= idex_regdata3_mux;
@@ -443,8 +443,8 @@ module datapath (
     // >>> memwb >>>
     always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            memwb_pcplusone <= `WORD_SIZE'b0;
             memwb_bubble <= 1'b1;
+            memwb_pcplusone <= `WORD_SIZE'b0;
 
             memwb_regwrite <= 1'b0;
             memwb_regdata3_mux <= 2'd0;
@@ -458,8 +458,8 @@ module datapath (
         end
         else begin
             if (memwb_hlt) begin
-                memwb_pcplusone <= `WORD_SIZE'b0;
                 memwb_bubble <= 1'b1;
+                memwb_pcplusone <= `WORD_SIZE'b0;
 
                 memwb_regwrite <= 1'b0;
                 memwb_regdata3_mux <= 2'd0;
@@ -472,8 +472,8 @@ module datapath (
                 memwb_mdr <= `WORD_SIZE'b0;
             end
             else begin
-                memwb_pcplusone <= exmem_pcplusone;
                 memwb_bubble <= exmem_bubble;
+                memwb_pcplusone <= exmem_pcplusone;
 
                 memwb_regwrite <= exmem_regwrite;
                 memwb_regdata3_mux <= exmem_regdata3_mux;

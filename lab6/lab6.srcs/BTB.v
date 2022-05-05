@@ -8,9 +8,9 @@ module BTB (
         pc,
         pcplusone,
         predpc,
+        exmem_bubble,
         exmem_pc,
-        exmem_nextpc,
-        exmem_bubble
+        exmem_nextpc
     );
 
     input clk;
@@ -20,9 +20,9 @@ module BTB (
     input [`WORD_SIZE - 1:0] pcplusone;
     output [`WORD_SIZE - 1:0] predpc;
 
+    input exmem_bubble;
     input [`WORD_SIZE - 1:0] exmem_pc;
     input [`WORD_SIZE - 1:0] exmem_nextpc;
-    input exmem_bubble;
 
     integer i;
 
