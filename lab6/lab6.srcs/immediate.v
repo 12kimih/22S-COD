@@ -32,7 +32,7 @@ module immediate (
             `OPCODE_LHI: extimm = upper;
             `OPCODE_LWD: extimm = sign;
             `OPCODE_SWD: extimm = sign;
-            default    : extimm = `WORD_SIZE'b0;
+            default: extimm = `WORD_SIZE'b0;
         endcase
     end
 endmodule

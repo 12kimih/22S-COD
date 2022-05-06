@@ -2,7 +2,6 @@
 `define CONSTANTS_V
 
 `define PERIOD1     100
-
 `define NUM_TEST    56
 `define TESTID_SIZE 5
 
