@@ -3,23 +3,22 @@
 `include "constants.v"
 `include "opcodes.v"
 
-module datapath (
+module datapath_v1 (
         clk,
         reset_n,
         opcode,
         func,
-        use_rs,
-        use_rt,
-        use_rd,
-        use_imm,
-        aluop,
+        nextpc_mux,
+        use_regaddr1,
+        use_regaddr2,
         regwrite,
+        regaddr3_mux,
+        regdata3_mux,
+        aluop,
+        aluin2_mux,
         memread,
         memwrite,
         branch,
-        jump,
-        jmpr,
-        link,
         wwd,
         hlt,
         i_readM,
@@ -40,20 +39,19 @@ module datapath (
 
     // control interface
     output [`OPCODE_SIZE - 1:0] opcode; // operation code of current instruction
-    output [`FUNC_SIZE - 1:0] func;     // function of current R-type instruction
+    output [`FUNC_SIZE - 1:0] func;     // function of current R-format instruction
 
-    input use_rs;                    // if current instruction uses rs
-    input use_rt;                    // if current instruction uses rt
-    input use_rd;                    // if current instruction writes rd
-    input use_imm;                   // if current instruction puts immediate into alu
-    input [`ALUOP_SIZE - 1:0] aluop; // alu operation
+    input [1:0] nextpc_mux;          // next pc mux [0:pcplusone|1:{pc[15:12], target}|2:regdata1]
+    input use_regaddr1;              // if current instruction uses regaddr1
+    input use_regaddr2;              // if current instruction uses regaddr2
     input regwrite;                  // enable register write
+    input [1:0] regaddr3_mux;        // register address 3 mux [0:ir[9:8]|1:ir[7:6]|2:`REG_ADDR'd2]
+    input [1:0] regdata3_mux;        // register data 3 mux [0:aluout|1:mdr|2:pcplusone]
+    input [`ALUOP_SIZE - 1:0] aluop; // alu operation
+    input aluin2_mux;                // alu input 2 mux [0:regdata2|1:extimm]
     input memread;                   // enable data memory read
     input memwrite;                  // enable data memory write
-    input branch;                    // if current instruction is branch (BNE, BEQ, BGZ, BLZ)
-    input jump;                      // if current instruciton is jump (JMP, JAL)
-    input jmpr;                      // if current instruciton is jump register (JPR, JRL)
-    input link;                      // if current instruciton links register (JAL, JRL)
+    input branch;                    // if current instruction is branch
     input wwd;                       // if current instruction is WWD
     input hlt;                       // if current instruction is HLT
 
@@ -79,12 +77,11 @@ module datapath (
     wire [`WORD_SIZE - 1:0] pcplusone;
 
     // ifid registers
+    reg ifid_nop;
     reg [`WORD_SIZE - 1:0] ifid_pc;
     reg [`WORD_SIZE - 1:0] ifid_pcplusone;
-    wire [`WORD_SIZE - 1:0] ifid_target;
     reg [`WORD_SIZE - 1:0] ifid_predpc;
 
-    reg ifid_nop;
     reg [`INST_SIZE - 1:0] ifid_ir;
 
     wire [`REG_ADDR - 1:0] regaddr1;
@@ -92,35 +89,34 @@ module datapath (
     wire [`REG_ADDR - 1:0] regaddr3;
     wire [`WORD_SIZE - 1:0] regdata1;
     wire [`WORD_SIZE - 1:0] regdata2;
-    wire [`WORD_SIZE - 1:0] forward1;
-    wire [`WORD_SIZE - 1:0] forward2;
     wire [`WORD_SIZE - 1:0] extimm;
+    wire [`TARGET_SIZE - 1:0] target;
 
     // idex registers
+    reg idex_nop;
     reg [`WORD_SIZE - 1:0] idex_pc;
     reg [`WORD_SIZE - 1:0] idex_pcplusone;
-    reg [`WORD_SIZE - 1:0] idex_target;
     reg [`WORD_SIZE - 1:0] idex_predpc;
     wire [`WORD_SIZE - 1:0] idex_nextpc;
 
-    reg idex_nop;
-    reg idex_use_imm;
-    reg [`ALUOP_SIZE - 1:0] idex_aluop;
+    reg [1:0] idex_nextpc_mux;
     reg idex_regwrite;
+    reg [1:0] idex_regdata3_mux;
+    reg [`ALUOP_SIZE - 1:0] idex_aluop;
+    reg idex_aluin2_mux;
     reg idex_memread;
     reg idex_memwrite;
     reg idex_branch;
-    reg idex_jump;
-    reg idex_jmpr;
-    reg idex_link;
     reg idex_wwd;
     reg idex_hlt;
 
+    reg [`REG_ADDR - 1:0] idex_regaddr1;
+    reg [`REG_ADDR - 1:0] idex_regaddr2;
     reg [`REG_ADDR - 1:0] idex_regaddr3;
     reg [`WORD_SIZE - 1:0] idex_regdata1;
     reg [`WORD_SIZE - 1:0] idex_regdata2;
-    wire [`WORD_SIZE - 1:0] idex_regdata3;
     reg [`WORD_SIZE - 1:0] idex_extimm;
+    reg [`TARGET_SIZE - 1:0] idex_target;
 
     wire [`WORD_SIZE - 1:0] aluin1;
     wire [`WORD_SIZE - 1:0] aluin2;
@@ -128,36 +124,38 @@ module datapath (
     wire bcond;
 
     // exmem registers
+    reg exmem_nop;
     reg [`WORD_SIZE - 1:0] exmem_pc;
     reg [`WORD_SIZE - 1:0] exmem_pcplusone;
-    reg [`WORD_SIZE - 1:0] exmem_target;
     reg [`WORD_SIZE - 1:0] exmem_predpc;
     reg [`WORD_SIZE - 1:0] exmem_nextpc;
 
-    reg exmem_nop;
     reg exmem_regwrite;
+    reg [1:0] exmem_regdata3_mux;
     reg exmem_memread;
     reg exmem_memwrite;
-    reg exmem_btb;
-    reg exmem_link;
     reg exmem_wwd;
     reg exmem_hlt;
 
     reg [`REG_ADDR - 1:0] exmem_regaddr3;
     reg [`WORD_SIZE - 1:0] exmem_regdata1;
     reg [`WORD_SIZE - 1:0] exmem_regdata2;
-    wire [`WORD_SIZE - 1:0] exmem_regdata3;
     reg [`WORD_SIZE - 1:0] exmem_aluout;
 
     // memwb registers
     reg memwb_nop;
+    reg [`WORD_SIZE - 1:0] memwb_pcplusone;
+
     reg memwb_regwrite;
+    reg [1:0] memwb_regdata3_mux;
     reg memwb_wwd;
     reg memwb_hlt;
 
     reg [`REG_ADDR - 1:0] memwb_regaddr3;
     reg [`WORD_SIZE - 1:0] memwb_regdata1;
-    reg [`WORD_SIZE - 1:0] memwb_regdata3;
+    wire [`WORD_SIZE - 1:0] memwb_regdata3;
+    reg [`WORD_SIZE - 1:0] memwb_aluout;
+    reg [`WORD_SIZE - 1:0] memwb_mdr;
 
     // BTB wires
     wire [`WORD_SIZE - 1:0] predpc;
@@ -169,52 +167,35 @@ module datapath (
     wire ifid_flush;
     wire idex_flush;
     wire exmem_flush;
-    wire memwb_flush;
 
-    // forward wires
-    wire [1:0] forward1_mux;
-    wire [1:0] forward2_mux;
+    BTB_v1 btb_unit (.clk(clk),
+                     .reset_n(reset_n),
+                     .pc(pc),
+                     .pcplusone(pcplusone),
+                     .predpc(predpc),
+                     .exmem_nop(exmem_nop),
+                     .exmem_pc(exmem_pc),
+                     .exmem_nextpc(exmem_nextpc));
 
-    BTB btb_unit (.clk(clk),
-                  .reset_n(reset_n),
-                  .pc(pc),
-                  .pcplusone(pcplusone),
-                  .predpc(predpc),
-                  .update_btb(exmem_btb),
-                  .update_pc(exmem_pc),
-                  .update_target(exmem_target),
-                  .update_nextpc(exmem_nextpc));
-
-    hazard hazard_unit (.use_rs(use_rs),
-                        .use_rt(use_rt),
-                        .regaddr1(regaddr1),
-                        .regaddr2(regaddr2),
-                        .idex_regwrite(idex_regwrite),
-                        .idex_memread(idex_memread),
-                        .idex_regaddr3(idex_regaddr3),
-                        .exmem_predpc(exmem_predpc),
-                        .exmem_nextpc(exmem_nextpc),
-                        .exmem_hlt(exmem_hlt),
-                        .memwb_hlt(memwb_hlt),
-                        .is_halted(is_halted),
-                        .pc_stall(pc_stall),
-                        .ifid_stall(ifid_stall),
-                        .pc_flush(pc_flush),
-                        .ifid_flush(ifid_flush),
-                        .idex_flush(idex_flush),
-                        .exmem_flush(exmem_flush),
-                        .memwb_flush(memwb_flush));
-
-    forward forward_unit (.regaddr1(regaddr1),
-                          .regaddr2(regaddr2),
-                          .idex_regwrite(idex_regwrite),
-                          .exmem_regwrite(exmem_regwrite),
-                          .memwb_regwrite(memwb_regwrite),
-                          .idex_regaddr3(idex_regaddr3),
-                          .exmem_regaddr3(exmem_regaddr3),
-                          .memwb_regaddr3(memwb_regaddr3),
-                          .forward1_mux(forward1_mux),
-                          .forward2_mux(forward2_mux));
+    hazard_v1 hazard_unit (.use_regaddr1(use_regaddr1),
+                           .use_regaddr2(use_regaddr2),
+                           .regaddr1(regaddr1),
+                           .regaddr2(regaddr2),
+                           .idex_regwrite(idex_regwrite),
+                           .exmem_regwrite(exmem_regwrite),
+                           .memwb_regwrite(memwb_regwrite),
+                           .idex_regaddr3(idex_regaddr3),
+                           .exmem_regaddr3(exmem_regaddr3),
+                           .memwb_regaddr3(memwb_regaddr3),
+                           .exmem_predpc(exmem_predpc),
+                           .exmem_nextpc(exmem_nextpc),
+                           .hlt(exmem_hlt || memwb_hlt),
+                           .pc_stall(pc_stall),
+                           .ifid_stall(ifid_stall),
+                           .pc_flush(pc_flush),
+                           .ifid_flush(ifid_flush),
+                           .idex_flush(idex_flush),
+                           .exmem_flush(exmem_flush));
 
     // >>> pc >>>
     always @(posedge clk or negedge reset_n) begin
@@ -223,7 +204,7 @@ module datapath (
         end
         else begin
             if (pc_flush) begin
-                pc <= exmem_nextpc;
+                pc <= memwb_hlt ? pc : exmem_nextpc;
             end
             else if (pc_stall) begin
                 pc <= pc;
@@ -240,46 +221,46 @@ module datapath (
     // >>> ifid >>>
     always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
+            ifid_nop <= 1'b1;
             ifid_pc <= `WORD_SIZE'b0;
             ifid_pcplusone <= `WORD_SIZE'b0;
             ifid_predpc <= `WORD_SIZE'b0;
 
-            ifid_nop <= 1'b1;
             ifid_ir <= `INST_SIZE'b0;
         end
         else begin
             if (ifid_flush) begin
+                ifid_nop <= 1'b1;
                 ifid_pc <= `WORD_SIZE'b0;
                 ifid_pcplusone <= `WORD_SIZE'b0;
                 ifid_predpc <= `WORD_SIZE'b0;
 
-                ifid_nop <= 1'b1;
                 ifid_ir <= `INST_SIZE'b0;
             end
             else if (ifid_stall) begin
+                ifid_nop <= ifid_nop;
                 ifid_pc <= ifid_pc;
                 ifid_pcplusone <= ifid_pcplusone;
                 ifid_predpc <= ifid_predpc;
 
-                ifid_nop <= ifid_nop;
                 ifid_ir <= ifid_ir;
             end
             else begin
+                ifid_nop <= 1'b0;
                 ifid_pc <= pc;
                 ifid_pcplusone <= pcplusone;
                 ifid_predpc <= predpc;
 
-                ifid_nop <= 1'b0;
                 ifid_ir <= i_data;
             end
         end
     end
 
-    assign ifid_target = branch ? ifid_pcplusone + extimm : jump ? {ifid_pc[15:12], ifid_ir[11:0]} : jmpr ? forward1 : ifid_pcplusone;
-
     assign regaddr1 = ifid_ir[11:10];
     assign regaddr2 = ifid_ir[9:8];
-    assign regaddr3 = use_rd ? ifid_ir[7:6] : link ? `REG_ADDR'd2 : ifid_ir[9:8];
+    assign regaddr3 = (regaddr3_mux == 2'd0) ? ifid_ir[9:8] :
+           (regaddr3_mux == 2'd1) ? ifid_ir[7:6] :
+           (regaddr3_mux == 2'd2) ? `REG_ADDR'd2 : ifid_ir[9:8];
 
     RF rf_unit (.clk(clk),
                 .reset_n(reset_n),
@@ -291,101 +272,101 @@ module datapath (
                 .data2(regdata2),
                 .data3(memwb_regdata3));
 
-    assign forward1 = (forward1_mux == 2'd1) ? idex_regdata3 :
-           (forward1_mux == 2'd2) ? exmem_regdata3 :
-           (forward1_mux == 2'd3) ? memwb_regdata3 : regdata1;
-    assign forward2 = (forward2_mux == 2'd1) ? idex_regdata3 :
-           (forward2_mux == 2'd2) ? exmem_regdata3 :
-           (forward2_mux == 2'd3) ? memwb_regdata3 : regdata2;
-
     immediate immediate_unit (.opcode(ifid_ir[15:12]),
                               .imm(ifid_ir[7:0]),
                               .extimm(extimm));
+
+    assign target = ifid_ir[11:0];
     // <<< ifid <<<
 
     // >>> idex >>>
     always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
+            idex_nop <= 1'b1;
             idex_pc <= `WORD_SIZE'b0;
             idex_pcplusone <= `WORD_SIZE'b0;
-            idex_target <= `WORD_SIZE'b0;
             idex_predpc <= `WORD_SIZE'b0;
 
-            idex_nop <= 1'b1;
-            idex_use_imm <= 1'b0;
-            idex_aluop <= `ALUOP_ADD;
+            idex_nextpc_mux <= 2'd0;
             idex_regwrite <= 1'b0;
+            idex_regdata3_mux <= 2'd0;
+            idex_aluop <= `ALUOP_ADD;
+            idex_aluin2_mux <= 1'b0;
             idex_memread <= 1'b0;
             idex_memwrite <= 1'b0;
             idex_branch <= 1'b0;
-            idex_jump <= 1'b0;
-            idex_jmpr <= 1'b0;
-            idex_link <= 1'b0;
             idex_wwd <= 1'b0;
             idex_hlt <= 1'b0;
 
+            idex_regaddr1 <= `REG_ADDR'b0;
+            idex_regaddr2 <= `REG_ADDR'b0;
             idex_regaddr3 <= `REG_ADDR'b0;
             idex_regdata1 <= `WORD_SIZE'b0;
             idex_regdata2 <= `WORD_SIZE'b0;
             idex_extimm <= `WORD_SIZE'b0;
+            idex_target <= `TARGET_SIZE'b0;
         end
         else begin
             if (idex_flush) begin
+                idex_nop <= 1'b1;
                 idex_pc <= `WORD_SIZE'b0;
                 idex_pcplusone <= `WORD_SIZE'b0;
-                idex_target <= `WORD_SIZE'b0;
                 idex_predpc <= `WORD_SIZE'b0;
 
-                idex_nop <= 1'b1;
-                idex_use_imm <= 1'b0;
-                idex_aluop <= `ALUOP_ADD;
+                idex_nextpc_mux <= 2'd0;
                 idex_regwrite <= 1'b0;
+                idex_regdata3_mux <= 2'd0;
+                idex_aluop <= `ALUOP_ADD;
+                idex_aluin2_mux <= 1'b0;
                 idex_memread <= 1'b0;
                 idex_memwrite <= 1'b0;
                 idex_branch <= 1'b0;
-                idex_jump <= 1'b0;
-                idex_jmpr <= 1'b0;
-                idex_link <= 1'b0;
                 idex_wwd <= 1'b0;
                 idex_hlt <= 1'b0;
 
+                idex_regaddr1 <= `REG_ADDR'b0;
+                idex_regaddr2 <= `REG_ADDR'b0;
                 idex_regaddr3 <= `REG_ADDR'b0;
                 idex_regdata1 <= `WORD_SIZE'b0;
                 idex_regdata2 <= `WORD_SIZE'b0;
                 idex_extimm <= `WORD_SIZE'b0;
+                idex_target <= `TARGET_SIZE'b0;
             end
             else begin
+                idex_nop <= ifid_nop;
                 idex_pc <= ifid_pc;
                 idex_pcplusone <= ifid_pcplusone;
-                idex_target <= ifid_target;
                 idex_predpc <= ifid_predpc;
 
-                idex_nop <= ifid_nop;
-                idex_use_imm <= use_imm;
-                idex_aluop <= aluop;
+                idex_nextpc_mux <= nextpc_mux;
                 idex_regwrite <= regwrite;
+                idex_regdata3_mux <= regdata3_mux;
+                idex_aluop <= aluop;
+                idex_aluin2_mux <= aluin2_mux;
                 idex_memread <= memread;
                 idex_memwrite <= memwrite;
                 idex_branch <= branch;
-                idex_jump <= jump;
-                idex_jmpr <= jmpr;
-                idex_link <= link;
                 idex_wwd <= wwd;
                 idex_hlt <= hlt;
 
+                idex_regaddr1 <= regaddr1;
+                idex_regaddr2 <= regaddr2;
                 idex_regaddr3 <= regaddr3;
-                idex_regdata1 <= forward1;
-                idex_regdata2 <= forward2;
+                idex_regdata1 <= regdata1;
+                idex_regdata2 <= regdata2;
                 idex_extimm <= extimm;
+                idex_target <= target;
             end
         end
     end
 
-    assign idex_nextpc = ((idex_branch && bcond) || idex_jump || idex_jmpr) ? idex_target : idex_pcplusone;
-    assign idex_regdata3 = idex_link ? idex_pcplusone : aluout;
+    assign idex_nextpc = (idex_branch && bcond) ? idex_pcplusone + idex_extimm :
+           (idex_nextpc_mux == 2'd0) ? idex_pcplusone :
+           (idex_nextpc_mux == 2'd1) ? {idex_pc[15:12], idex_target} :
+           (idex_nextpc_mux == 2'd2) ? idex_regdata1 : idex_pcplusone;
 
     assign aluin1 = idex_regdata1;
-    assign aluin2 = idex_use_imm ? idex_extimm : idex_regdata2;
+    assign aluin2 = idex_aluin2_mux ? idex_extimm : idex_regdata2;
 
     ALU alu_unit (.op(idex_aluop),
                   .in1(aluin1),
@@ -398,18 +379,16 @@ module datapath (
     // >>> exmem >>>
     always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
+            exmem_nop <= 1'b1;
             exmem_pc <= `WORD_SIZE'b0;
             exmem_pcplusone <= `WORD_SIZE'b0;
-            exmem_target <= `WORD_SIZE'b0;
             exmem_predpc <= `WORD_SIZE'b0;
             exmem_nextpc <= `WORD_SIZE'b0;
 
-            exmem_nop <= 1'b1;
             exmem_regwrite <= 1'b0;
+            exmem_regdata3_mux <= 2'd0;
             exmem_memread <= 1'b0;
             exmem_memwrite <= 1'b0;
-            exmem_btb <= 1'b0;
-            exmem_link <= 1'b0;
             exmem_wwd <= 1'b0;
             exmem_hlt <= 1'b0;
 
@@ -420,18 +399,16 @@ module datapath (
         end
         else begin
             if (exmem_flush) begin
+                exmem_nop <= 1'b1;
                 exmem_pc <= `WORD_SIZE'b0;
                 exmem_pcplusone <= `WORD_SIZE'b0;
-                exmem_target <= `WORD_SIZE'b0;
                 exmem_predpc <= `WORD_SIZE'b0;
                 exmem_nextpc <= `WORD_SIZE'b0;
 
-                exmem_nop <= 1'b1;
                 exmem_regwrite <= 1'b0;
+                exmem_regdata3_mux <= 2'd0;
                 exmem_memread <= 1'b0;
                 exmem_memwrite <= 1'b0;
-                exmem_btb <= 1'b0;
-                exmem_link <= 1'b0;
                 exmem_wwd <= 1'b0;
                 exmem_hlt <= 1'b0;
 
@@ -441,18 +418,16 @@ module datapath (
                 exmem_aluout <= `WORD_SIZE'b0;
             end
             else begin
+                exmem_nop <= idex_nop;
                 exmem_pc <= idex_pc;
                 exmem_pcplusone <= idex_pcplusone;
-                exmem_target <= idex_target;
                 exmem_predpc <= idex_predpc;
                 exmem_nextpc <= idex_nextpc;
 
-                exmem_nop <= idex_nop;
                 exmem_regwrite <= idex_regwrite;
+                exmem_regdata3_mux <= idex_regdata3_mux;
                 exmem_memread <= idex_memread;
                 exmem_memwrite <= idex_memwrite;
-                exmem_btb <= idex_branch || idex_jump || idex_jmpr;
-                exmem_link <= idex_link;
                 exmem_wwd <= idex_wwd;
                 exmem_hlt <= idex_hlt;
 
@@ -463,45 +438,59 @@ module datapath (
             end
         end
     end
-
-    assign exmem_regdata3 = exmem_memread ? d_data : exmem_link ? exmem_pcplusone : exmem_aluout;
     // <<< exmem <<<
 
     // >>> memwb >>>
     always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
             memwb_nop <= 1'b1;
+            memwb_pcplusone <= `WORD_SIZE'b0;
+
             memwb_regwrite <= 1'b0;
+            memwb_regdata3_mux <= 2'd0;
             memwb_wwd <= 1'b0;
             memwb_hlt <= 1'b0;
 
             memwb_regaddr3 <= `REG_ADDR'b0;
             memwb_regdata1 <= `WORD_SIZE'b0;
-            memwb_regdata3 <= `WORD_SIZE'b0;
+            memwb_aluout <= `WORD_SIZE'b0;
+            memwb_mdr <= `WORD_SIZE'b0;
         end
         else begin
-            if (memwb_flush) begin
+            if (memwb_hlt) begin
                 memwb_nop <= 1'b1;
+                memwb_pcplusone <= `WORD_SIZE'b0;
+
                 memwb_regwrite <= 1'b0;
+                memwb_regdata3_mux <= 2'd0;
                 memwb_wwd <= 1'b0;
-                memwb_hlt <= 1'b0;
+                memwb_hlt <= 1'b1;
 
                 memwb_regaddr3 <= `REG_ADDR'b0;
                 memwb_regdata1 <= `WORD_SIZE'b0;
-                memwb_regdata3 <= `WORD_SIZE'b0;
+                memwb_aluout <= `WORD_SIZE'b0;
+                memwb_mdr <= `WORD_SIZE'b0;
             end
             else begin
                 memwb_nop <= exmem_nop;
+                memwb_pcplusone <= exmem_pcplusone;
+
                 memwb_regwrite <= exmem_regwrite;
+                memwb_regdata3_mux <= exmem_regdata3_mux;
                 memwb_wwd <= exmem_wwd;
                 memwb_hlt <= exmem_hlt;
 
                 memwb_regaddr3 <= exmem_regaddr3;
                 memwb_regdata1 <= exmem_regdata1;
-                memwb_regdata3 <= exmem_regdata3;
+                memwb_aluout <= exmem_aluout;
+                memwb_mdr <= d_data;
             end
         end
     end
+
+    assign memwb_regdata3 = (memwb_regdata3_mux == 2'd0) ? memwb_aluout :
+           (memwb_regdata3_mux == 2'd1) ? memwb_mdr :
+           (memwb_regdata3_mux == 2'd2) ? memwb_pcplusone : memwb_aluout;
     // <<< memwb <<<
 
     // >>> output >>>

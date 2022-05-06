@@ -2,7 +2,7 @@
 
 `include "constants.v"
 
-module Memory (
+module memory (
         clk,
         reset_n,
         i_readM,
