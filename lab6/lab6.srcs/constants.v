@@ -18,9 +18,10 @@
 `define TARGET_SIZE 12
 `define EXT_SIZE    8 // `WORD_SIZE - `IMM_SIZE
 
-`define ALUOP_SIZE     4
-`define CONTROL_SIGSET 17 // `ALUOP_SIZE + 13
-`define HAZARD_SIGSET  7
+`define ALUOP_SIZE         4
+`define CONTROL_SIGSET     17 // `ALUOP_SIZE + 13
+`define HAZARD_SIGSET_MEM  7
+`define HAZARD_SIGSET_IDEX 8
 
 `define BTB_SIZE     256
 `define BTB_ADDR     8
