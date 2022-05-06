@@ -3,7 +3,7 @@
 `include "constants.v"
 `include "opcodes.v"
 
-module datapath_v4 (
+module datapath_v3_2 (
         clk,
         reset_n,
         opcode,
@@ -185,7 +185,7 @@ module datapath_v4 (
                      .update_target(exmem_target),
                      .update_nextpc(exmem_nextpc));
 
-    hazard_v4 hazard_unit (.use_rs(use_rs),
+    hazard_v3 hazard_unit (.use_rs(use_rs),
                            .use_rt(use_rt),
                            .regaddr1(regaddr1),
                            .regaddr2(regaddr2),

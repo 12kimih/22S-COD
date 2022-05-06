@@ -3,7 +3,7 @@
 `include "constants.v"
 `include "opcodes.v"
 
-module datapath_v5 (
+module datapath_v3_1 (
         clk,
         reset_n,
         opcode,
@@ -83,7 +83,6 @@ module datapath_v5 (
     reg [`WORD_SIZE - 1:0] ifid_pcplusone;
     wire [`WORD_SIZE - 1:0] ifid_target;
     reg [`WORD_SIZE - 1:0] ifid_predpc;
-    wire [`WORD_SIZE - 1:0] ifid_nextpc;
 
     reg ifid_nop;
     reg [`INST_SIZE - 1:0] ifid_ir;
@@ -129,13 +128,17 @@ module datapath_v5 (
     wire bcond;
 
     // exmem registers
+    reg [`WORD_SIZE - 1:0] exmem_pc;
     reg [`WORD_SIZE - 1:0] exmem_pcplusone;
+    reg [`WORD_SIZE - 1:0] exmem_target;
+    reg [`WORD_SIZE - 1:0] exmem_predpc;
     reg [`WORD_SIZE - 1:0] exmem_nextpc;
 
     reg exmem_nop;
     reg exmem_regwrite;
     reg exmem_memread;
     reg exmem_memwrite;
+    reg exmem_btb;
     reg exmem_link;
     reg exmem_wwd;
     reg exmem_hlt;
@@ -162,7 +165,7 @@ module datapath_v5 (
     // hazard wires
     wire pc_stall;
     wire ifid_stall;
-    wire [1:0] pc_flush;
+    wire pc_flush;
     wire ifid_flush;
     wire idex_flush;
     wire exmem_flush;
@@ -172,30 +175,24 @@ module datapath_v5 (
     wire [1:0] forward1_mux;
     wire [1:0] forward2_mux;
 
-    BTB_2C btb_unit (.clk(clk),
+    BTB_AT btb_unit (.clk(clk),
                      .reset_n(reset_n),
                      .pc(pc),
                      .pcplusone(pcplusone),
                      .predpc(predpc),
-                     .update_btb(idex_branch || idex_jump || idex_jmpr),
-                     .update_pc(idex_pc),
-                     .update_target(idex_target),
-                     .update_nextpc(idex_nextpc));
+                     .update_btb(exmem_btb),
+                     .update_pc(exmem_pc),
+                     .update_target(exmem_target));
 
-    hazard_v5 hazard_unit (.use_rs(use_rs),
+    hazard_v3 hazard_unit (.use_rs(use_rs),
                            .use_rt(use_rt),
                            .regaddr1(regaddr1),
                            .regaddr2(regaddr2),
                            .idex_regwrite(idex_regwrite),
                            .idex_memread(idex_memread),
                            .idex_regaddr3(idex_regaddr3),
-                           .idex_branch(idex_branch),
-                           .jump(jump),
-                           .jmpr(jmpr),
-                           .ifid_predpc(ifid_predpc),
-                           .ifid_nextpc(ifid_nextpc),
-                           .idex_predpc(idex_predpc),
-                           .idex_nextpc(idex_nextpc),
+                           .exmem_predpc(exmem_predpc),
+                           .exmem_nextpc(exmem_nextpc),
                            .exmem_hlt(exmem_hlt),
                            .memwb_hlt(memwb_hlt),
                            .is_halted(is_halted),
@@ -224,8 +221,8 @@ module datapath_v5 (
             pc <= `WORD_SIZE'd0;
         end
         else begin
-            if (|pc_flush) begin
-                pc <= (pc_flush == 2'd1) ? ifid_nextpc : (pc_flush == 2'd2) ? idex_nextpc : exmem_nextpc;
+            if (pc_flush) begin
+                pc <= exmem_nextpc;
             end
             else if (pc_stall) begin
                 pc <= pc;
@@ -278,7 +275,6 @@ module datapath_v5 (
     end
 
     assign ifid_target = branch ? ifid_pcplusone + extimm : jump ? {ifid_pc[15:12], ifid_ir[11:0]} : jmpr ? forward1 : ifid_pcplusone;
-    assign ifid_nextpc = (jump || jmpr) ? ifid_target : ifid_pcplusone;
 
     assign regaddr1 = ifid_ir[11:10];
     assign regaddr2 = ifid_ir[9:8];
@@ -401,13 +397,17 @@ module datapath_v5 (
     // >>> exmem >>>
     always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
+            exmem_pc <= `WORD_SIZE'b0;
             exmem_pcplusone <= `WORD_SIZE'b0;
+            exmem_target <= `WORD_SIZE'b0;
+            exmem_predpc <= `WORD_SIZE'b0;
             exmem_nextpc <= `WORD_SIZE'b0;
 
             exmem_nop <= 1'b1;
             exmem_regwrite <= 1'b0;
             exmem_memread <= 1'b0;
             exmem_memwrite <= 1'b0;
+            exmem_btb <= 1'b0;
             exmem_link <= 1'b0;
             exmem_wwd <= 1'b0;
             exmem_hlt <= 1'b0;
@@ -419,13 +419,17 @@ module datapath_v5 (
         end
         else begin
             if (exmem_flush) begin
+                exmem_pc <= `WORD_SIZE'b0;
                 exmem_pcplusone <= `WORD_SIZE'b0;
+                exmem_target <= `WORD_SIZE'b0;
+                exmem_predpc <= `WORD_SIZE'b0;
                 exmem_nextpc <= `WORD_SIZE'b0;
 
                 exmem_nop <= 1'b1;
                 exmem_regwrite <= 1'b0;
                 exmem_memread <= 1'b0;
                 exmem_memwrite <= 1'b0;
+                exmem_btb <= 1'b0;
                 exmem_link <= 1'b0;
                 exmem_wwd <= 1'b0;
                 exmem_hlt <= 1'b0;
@@ -436,13 +440,17 @@ module datapath_v5 (
                 exmem_aluout <= `WORD_SIZE'b0;
             end
             else begin
+                exmem_pc <= idex_pc;
                 exmem_pcplusone <= idex_pcplusone;
+                exmem_target <= idex_target;
+                exmem_predpc <= idex_predpc;
                 exmem_nextpc <= idex_nextpc;
 
                 exmem_nop <= idex_nop;
                 exmem_regwrite <= idex_regwrite;
                 exmem_memread <= idex_memread;
                 exmem_memwrite <= idex_memwrite;
+                exmem_btb <= idex_branch || idex_jump || idex_jmpr;
                 exmem_link <= idex_link;
                 exmem_wwd <= idex_wwd;
                 exmem_hlt <= idex_hlt;

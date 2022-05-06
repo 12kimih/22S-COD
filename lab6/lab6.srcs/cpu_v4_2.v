@@ -3,10 +3,10 @@
 `include "constants.v"
 `include "opcodes.v"
 
-// 1854 cycles
-// data hazard: use internal forwarding, stall for every RAW hazard
-// control hazard: branch/jump resolution at mem stage, branch predictor assuming always taken
-module cpu_v2 (
+// 1176 cycles
+// data hazard: use forwarding, stall only for load-involved RAW hazards
+// control hazard: branch/jump resolution at ex/id stage, branch predictor using 2-bit saturation counter
+module cpu_v4_2 (
         clk,
         reset_n,
         i_readM,
@@ -61,35 +61,35 @@ module cpu_v2 (
     wire wwd;                       // if current instruction is WWD
     wire hlt;                       // if current instruction is HLT
 
-    datapath_v2 datapath_unit (.clk(clk),
-                               .reset_n(reset_n),
-                               .opcode(opcode),
-                               .func(func),
-                               .use_rs(use_rs),
-                               .use_rt(use_rt),
-                               .use_rd(use_rd),
-                               .use_imm(use_imm),
-                               .aluop(aluop),
-                               .regwrite(regwrite),
-                               .memread(memread),
-                               .memwrite(memwrite),
-                               .branch(branch),
-                               .jump(jump),
-                               .jmpr(jmpr),
-                               .link(link),
-                               .wwd(wwd),
-                               .hlt(hlt),
-                               .i_readM(i_readM),
-                               .i_writeM(i_writeM),
-                               .i_address(i_address),
-                               .i_data(i_data),
-                               .d_readM(d_readM),
-                               .d_writeM(d_writeM),
-                               .d_address(d_address),
-                               .d_data(d_data),
-                               .num_inst(num_inst),
-                               .output_port(output_port),
-                               .is_halted(is_halted));
+    datapath_v4_2 datapath_unit (.clk(clk),
+                                 .reset_n(reset_n),
+                                 .opcode(opcode),
+                                 .func(func),
+                                 .use_rs(use_rs),
+                                 .use_rt(use_rt),
+                                 .use_rd(use_rd),
+                                 .use_imm(use_imm),
+                                 .aluop(aluop),
+                                 .regwrite(regwrite),
+                                 .memread(memread),
+                                 .memwrite(memwrite),
+                                 .branch(branch),
+                                 .jump(jump),
+                                 .jmpr(jmpr),
+                                 .link(link),
+                                 .wwd(wwd),
+                                 .hlt(hlt),
+                                 .i_readM(i_readM),
+                                 .i_writeM(i_writeM),
+                                 .i_address(i_address),
+                                 .i_data(i_data),
+                                 .d_readM(d_readM),
+                                 .d_writeM(d_writeM),
+                                 .d_address(d_address),
+                                 .d_data(d_data),
+                                 .num_inst(num_inst),
+                                 .output_port(output_port),
+                                 .is_halted(is_halted));
 
     control control_unit (.opcode(opcode),
                           .func(func),

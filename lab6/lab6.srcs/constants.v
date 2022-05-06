@@ -18,15 +18,17 @@
 `define TARGET_SIZE 12
 `define EXT_SIZE    8 // `WORD_SIZE - `IMM_SIZE
 
-`define ALUOP_SIZE         4
-`define CONTROL_SIGSET     17 // `ALUOP_SIZE + 13
-`define HAZARD_SIGSET_MEM  7
-`define HAZARD_SIGSET_IDEX 8
+`define ALUOP_SIZE       4
+`define CONTROL_SIGSET   17 // `ALUOP_SIZE + 13
+`define HAZARD_V1_SIGSET 7
+`define HAZARD_V2_SIGSET 7
+`define HAZARD_V3_SIGSET 7
+`define HAZARD_V4_SIGSET 8
 
 `define BTB_SIZE     256
 `define BTB_ADDR     8
 `define BTB_TAG      8  // `WORD_SIZE - `BTB_ADDR
-`define BTB_ENTRY_AT 25 // `BTB_TAG + 1 + `WORD_SIZE
-`define BTB_ENTRY_2C 27 // `BTB_TAG + 3 + `WORD_SIZE
+`define BTB_AT_ENTRY 25 // `BTB_TAG + 1 + `WORD_SIZE
+`define BTB_2C_ENTRY 27 // `BTB_TAG + 3 + `WORD_SIZE
 
 `endif

@@ -51,7 +51,7 @@ module hazard_v2 (
     output exmem_flush;
     output memwb_flush;
 
-    reg [`HAZARD_SIGSET_MEM - 1:0] sigset;
+    reg [`HAZARD_V2_SIGSET - 1:0] sigset;
 
     assign {pc_stall, ifid_stall, pc_flush, ifid_flush, idex_flush, exmem_flush, memwb_flush} = sigset;
 
