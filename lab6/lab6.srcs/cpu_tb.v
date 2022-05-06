@@ -24,19 +24,19 @@ module cpu_tb;
     wire is_halted;                      // HLT indicator
 
     // instantiate the unit under test
-    cpu cpu_unit (.clk(clk),
-                  .reset_n(reset_n),
-                  .i_readM(i_readM),
-                  .i_writeM(i_writeM),
-                  .i_address(i_address),
-                  .i_data(i_data),
-                  .d_readM(d_readM),
-                  .d_writeM(d_writeM),
-                  .d_address(d_address),
-                  .d_data(d_data),
-                  .num_inst(num_inst),
-                  .output_port(output_port),
-                  .is_halted(is_halted));
+    cpu_v1 cpu_unit (.clk(clk),
+                     .reset_n(reset_n),
+                     .i_readM(i_readM),
+                     .i_writeM(i_writeM),
+                     .i_address(i_address),
+                     .i_data(i_data),
+                     .d_readM(d_readM),
+                     .d_writeM(d_writeM),
+                     .d_address(d_address),
+                     .d_data(d_data),
+                     .num_inst(num_inst),
+                     .output_port(output_port),
+                     .is_halted(is_halted));
 
     memory memory_unit (.clk(~clk),
                         .reset_n(reset_n),

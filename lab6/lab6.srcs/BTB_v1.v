@@ -8,9 +8,9 @@ module BTB_v1 (
         pc,
         pcplusone,
         predpc,
-        exmem_nop,
-        exmem_pc,
-        exmem_nextpc
+        update_btb,
+        update_pc,
+        update_target,
     );
 
     input clk;
@@ -20,30 +20,32 @@ module BTB_v1 (
     input [`WORD_SIZE - 1:0] pcplusone;
     output [`WORD_SIZE - 1:0] predpc;
 
-    input exmem_nop;
-    input [`WORD_SIZE - 1:0] exmem_pc;
-    input [`WORD_SIZE - 1:0] exmem_nextpc;
+    input update_btb;
+    input [`WORD_SIZE - 1:0] update_pc;
+    input [`WORD_SIZE - 1:0] update_target;
 
     integer i;
 
-    reg [`BTB_ENTRY_BL - 1:0] btb [0:`BTB_SIZE - 1];
+    reg [`BTB_ENTRY_V1 - 1:0] btb [0:`BTB_SIZE - 1];
 
-    wire [`BTB_ENTRY_BL - 1:0] entry;
+    wire [`BTB_ENTRY_V1 - 1:0] entry;
+    wire [`BTB_ENTRY_V1 - 1:0] update_entry;
+
+    assign entry = btb[pc[`BTB_ADDR - 1:0]];
+    assign update_entry = btb[update_pc[`BTB_ADDR - 1:0]];
+
+    assign predpc = (pc[`WORD_SIZE - 1-:`BTB_TAG] == entry[`BTB_ENTRY_V1 - 1-:`BTB_TAG] && entry[`WORD_SIZE]) ? entry[`WORD_SIZE - 1:0] : pcplusone;
 
     always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
             for (i = 0; i < `BTB_SIZE; i = i + 1) begin
-                btb[i] <= `BTB_ENTRY_BL'b0;
+                btb[i] <= `BTB_ENTRY_V1'b0;
             end
         end
         else begin
-            if (!exmem_nop) begin
-                btb[exmem_pc[`BTB_ADDR - 1:0]] <= {exmem_pc[`WORD_SIZE - 1-:`BTB_TAG], 1'b1, exmem_nextpc};
+            if (update_btb) begin
+                btb[update_pc[`BTB_ADDR - 1:0]] <= {update_pc[`WORD_SIZE - 1-:`BTB_TAG], 1'b1, update_target};
             end
         end
     end
-
-    assign entry = btb[pc[`BTB_ADDR - 1:0]];
-
-    assign predpc = (pc[`WORD_SIZE - 1-:`BTB_TAG] == entry[`BTB_ENTRY_BL - 1-:`BTB_TAG] && entry[`WORD_SIZE]) ? entry[`WORD_SIZE - 1:0] : pcplusone;
 endmodule
