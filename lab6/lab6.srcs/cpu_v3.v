@@ -3,6 +3,8 @@
 `include "constants.v"
 `include "opcodes.v"
 
+// data hazard: use forwarding, stall only for load-involved RAW hazards
+// control hazard: branch/jump resolution at mem stage, branch predictor assuming always taken
 module cpu_v3 (
         clk,
         reset_n,

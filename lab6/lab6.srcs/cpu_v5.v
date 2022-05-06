@@ -3,6 +3,8 @@
 `include "constants.v"
 `include "opcodes.v"
 
+// data hazard: use forwarding, stall only for load-involved RAW hazards
+// control hazard: branch/jump resolution at ex/id stage, branch predictor using 2-bit saturation counter
 module cpu_v5 (
         clk,
         reset_n,
