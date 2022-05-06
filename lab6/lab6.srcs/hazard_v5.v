@@ -2,7 +2,7 @@
 
 `include "constants.v"
 
-module hazard (
+module hazard_v5 (
         use_rs,
         use_rt,
         regaddr1,

@@ -25,7 +25,7 @@
 `define BTB_SIZE     256
 `define BTB_ADDR     8
 `define BTB_TAG      8  // `WORD_SIZE - `BTB_ADDR
-`define BTB_ENTRY_V1 25 // `BTB_TAG + 1 + `WORD_SIZE
-`define BTB_ENTRY_V2 27 // `BTB_TAG + 3 + `WORD_SIZE
+`define BTB_ENTRY_AT 25 // `BTB_TAG + 1 + `WORD_SIZE
+`define BTB_ENTRY_2C 27 // `BTB_TAG + 3 + `WORD_SIZE
 
 `endif
