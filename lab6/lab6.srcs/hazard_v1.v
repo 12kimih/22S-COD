@@ -3,10 +3,10 @@
 `include "constants.v"
 
 module hazard_v1 (
-        use_rs,
-        use_rt,
-        regaddr1,
-        regaddr2,
+        ifid_use_rs,
+        ifid_use_rt,
+        ifid_regaddr1,
+        ifid_regaddr2,
         idex_regwrite,
         exmem_regwrite,
         memwb_regwrite,
@@ -28,10 +28,10 @@ module hazard_v1 (
     );
 
     // data hazard conditions
-    input use_rs;
-    input use_rt;
-    input [`REG_ADDR - 1:0] regaddr1;
-    input [`REG_ADDR - 1:0] regaddr2;
+    input ifid_use_rs;
+    input ifid_use_rt;
+    input [`REG_ADDR - 1:0] ifid_regaddr1;
+    input [`REG_ADDR - 1:0] ifid_regaddr2;
     input idex_regwrite;
     input exmem_regwrite;
     input memwb_regwrite;
@@ -66,22 +66,22 @@ module hazard_v1 (
         else if (exmem_hlt || exmem_predpc != exmem_nextpc) begin
             sigset = {1'b0, 1'b0, 1'b1, 1'b1, 1'b1, 1'b1, 1'b0};
         end
-        else if (regaddr1 == idex_regaddr3 && use_rs && idex_regwrite) begin
+        else if (ifid_regaddr1 == idex_regaddr3 && ifid_use_rs && idex_regwrite) begin
             sigset = {1'b1, 1'b1, 1'b0, 1'b0, 1'b1, 1'b0, 1'b0};
         end
-        else if (regaddr1 == exmem_regaddr3 && use_rs && exmem_regwrite) begin
+        else if (ifid_regaddr1 == exmem_regaddr3 && ifid_use_rs && exmem_regwrite) begin
             sigset = {1'b1, 1'b1, 1'b0, 1'b0, 1'b1, 1'b0, 1'b0};
         end
-        else if (regaddr1 == memwb_regaddr3 && use_rs && memwb_regwrite) begin
+        else if (ifid_regaddr1 == memwb_regaddr3 && ifid_use_rs && memwb_regwrite) begin
             sigset = {1'b1, 1'b1, 1'b0, 1'b0, 1'b1, 1'b0, 1'b0};
         end
-        else if (regaddr2 == idex_regaddr3 && use_rt && idex_regwrite) begin
+        else if (ifid_regaddr2 == idex_regaddr3 && ifid_use_rt && idex_regwrite) begin
             sigset = {1'b1, 1'b1, 1'b0, 1'b0, 1'b1, 1'b0, 1'b0};
         end
-        else if (regaddr2 == exmem_regaddr3 && use_rt && exmem_regwrite) begin
+        else if (ifid_regaddr2 == exmem_regaddr3 && ifid_use_rt && exmem_regwrite) begin
             sigset = {1'b1, 1'b1, 1'b0, 1'b0, 1'b1, 1'b0, 1'b0};
         end
-        else if (regaddr2 == memwb_regaddr3 && use_rt && memwb_regwrite) begin
+        else if (ifid_regaddr2 == memwb_regaddr3 && ifid_use_rt && memwb_regwrite) begin
             sigset = {1'b1, 1'b1, 1'b0, 1'b0, 1'b1, 1'b0, 1'b0};
         end
         else begin

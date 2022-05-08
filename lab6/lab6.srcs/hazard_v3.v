@@ -3,15 +3,20 @@
 `include "constants.v"
 
 module hazard_v3 (
-        use_rs,
-        use_rt,
-        regaddr1,
-        regaddr2,
+        ifid_use_rs,
+        ifid_use_rt,
+        ifid_regaddr1,
+        ifid_regaddr2,
         idex_regwrite,
         idex_memread,
         idex_regaddr3,
-        exmem_predpc,
-        exmem_nextpc,
+        ifid_jump,
+        ifid_jmpr,
+        ifid_predpc,
+        ifid_nextpc,
+        idex_branch,
+        idex_predpc,
+        idex_nextpc,
         exmem_hlt,
         memwb_hlt,
         is_halted,
@@ -25,17 +30,22 @@ module hazard_v3 (
     );
 
     // data hazard conditions
-    input use_rs;
-    input use_rt;
-    input [`REG_ADDR - 1:0] regaddr1;
-    input [`REG_ADDR - 1:0] regaddr2;
+    input ifid_use_rs;
+    input ifid_use_rt;
+    input [`REG_ADDR - 1:0] ifid_regaddr1;
+    input [`REG_ADDR - 1:0] ifid_regaddr2;
     input idex_regwrite;
     input idex_memread;
     input [`REG_ADDR - 1:0] idex_regaddr3;
 
     // control hazard conditions
-    input [`WORD_SIZE - 1:0] exmem_predpc;
-    input [`WORD_SIZE - 1:0] exmem_nextpc;
+    input ifid_jump;
+    input ifid_jmpr;
+    input [`WORD_SIZE - 1:0] ifid_predpc;
+    input [`WORD_SIZE - 1:0] ifid_nextpc;
+    input idex_branch;
+    input [`WORD_SIZE - 1:0] idex_predpc;
+    input [`WORD_SIZE - 1:0] idex_nextpc;
     input exmem_hlt;
     input memwb_hlt;
     input is_halted;
@@ -43,7 +53,7 @@ module hazard_v3 (
     // hazard resolution
     output pc_stall;
     output ifid_stall;
-    output pc_flush;
+    output [1:0] pc_flush;
     output ifid_flush;
     output idex_flush;
     output exmem_flush;
@@ -55,19 +65,25 @@ module hazard_v3 (
 
     always @(*) begin
         if (is_halted || memwb_hlt) begin
-            sigset = {1'b1, 1'b0, 1'b0, 1'b1, 1'b1, 1'b1, 1'b1};
+            sigset = {1'b1, 1'b0, 2'd0, 1'b1, 1'b1, 1'b1, 1'b1};
         end
-        else if (exmem_hlt || exmem_predpc != exmem_nextpc) begin
-            sigset = {1'b0, 1'b0, 1'b1, 1'b1, 1'b1, 1'b1, 1'b0};
+        else if (exmem_hlt) begin
+            sigset = {1'b0, 1'b0, 2'd3, 1'b1, 1'b1, 1'b1, 1'b0};
         end
-        else if (regaddr1 == idex_regaddr3 && use_rs && idex_regwrite && idex_memread) begin
-            sigset = {1'b1, 1'b1, 1'b0, 1'b0, 1'b1, 1'b0, 1'b0};
+        else if (idex_branch && idex_predpc != idex_nextpc) begin
+            sigset = {1'b0, 1'b0, 2'd2, 1'b1, 1'b1, 1'b0, 1'b0};
         end
-        else if (regaddr2 == idex_regaddr3 && use_rt && idex_regwrite && idex_memread) begin
-            sigset = {1'b1, 1'b1, 1'b0, 1'b0, 1'b1, 1'b0, 1'b0};
+        else if (ifid_regaddr1 == idex_regaddr3 && ifid_use_rs && idex_regwrite && idex_memread) begin
+            sigset = {1'b1, 1'b1, 2'd0, 1'b0, 1'b1, 1'b0, 1'b0};
+        end
+        else if (ifid_regaddr2 == idex_regaddr3 && ifid_use_rt && idex_regwrite && idex_memread) begin
+            sigset = {1'b1, 1'b1, 2'd0, 1'b0, 1'b1, 1'b0, 1'b0};
+        end
+        else if ((ifid_jump || ifid_jmpr) && ifid_predpc != ifid_nextpc) begin
+            sigset = {1'b0, 1'b0, 2'd1, 1'b1, 1'b0, 1'b0, 1'b0};
         end
         else begin
-            sigset = {1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0};
+            sigset = {1'b0, 1'b0, 2'd0, 1'b0, 1'b0, 1'b0, 1'b0};
         end
     end
 endmodule

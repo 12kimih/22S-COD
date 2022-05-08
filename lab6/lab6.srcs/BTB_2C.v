@@ -9,7 +9,7 @@ module BTB_2C (
         pc,
         pcplusone,
         predpc,
-        update_btb,
+        update,
         update_pc,
         update_target,
         update_nextpc
@@ -22,7 +22,7 @@ module BTB_2C (
     input [`WORD_SIZE - 1:0] pcplusone;
     output [`WORD_SIZE - 1:0] predpc;
 
-    input update_btb;
+    input update;
     input [`WORD_SIZE - 1:0] update_pc;
     input [`WORD_SIZE - 1:0] update_target;
     input [`WORD_SIZE - 1:0] update_nextpc;
@@ -54,17 +54,22 @@ module BTB_2C (
             end
         end
         else begin
-            if (update_btb) begin
-                if (update_pc[`WORD_SIZE - 1-:`BTB_TAG] == update_entry[`BTB_2C_ENTRY - 1-:`BTB_TAG] && update_entry[`WORD_SIZE]) begin
-                    if (update_nextpc == update_entry[`WORD_SIZE - 1:0]) begin
-                        btb[update_pc[`BTB_ADDR - 1:0]] <= {update_entry[`BTB_2C_ENTRY - 1-:`BTB_TAG], update_counter_plus, 1'b1, update_entry[`WORD_SIZE - 1:0]};
+            if (update) begin
+                if (update_pc[`WORD_SIZE - 1-:`BTB_TAG] == update_entry[`BTB_2C_ENTRY - 1-:`BTB_TAG] && update_entry[`WORD_SIZE] && update_target == update_entry[`WORD_SIZE - 1:0]) begin
+                    if (update_nextpc == update_target) begin
+                        btb[update_pc[`BTB_ADDR - 1:0]] <= {update_pc[`WORD_SIZE - 1-:`BTB_TAG], update_counter_plus, 1'b1, update_target};
                     end
                     else begin
-                        btb[update_pc[`BTB_ADDR - 1:0]] <= {update_entry[`BTB_2C_ENTRY - 1-:`BTB_TAG], update_counter_minus, 1'b1, update_entry[`WORD_SIZE - 1:0]};
+                        btb[update_pc[`BTB_ADDR - 1:0]] <= {update_pc[`WORD_SIZE - 1-:`BTB_TAG], update_counter_minus, 1'b1, update_target};
                     end
                 end
                 else begin
-                    btb[update_pc[`BTB_ADDR - 1:0]] <= {update_pc[`WORD_SIZE - 1-:`BTB_TAG], 2'd2, 1'b1, update_target};
+                    if (update_nextpc == update_target) begin
+                        btb[update_pc[`BTB_ADDR - 1:0]] <= {update_pc[`WORD_SIZE - 1-:`BTB_TAG], 2'd2, 1'b1, update_target};
+                    end
+                    else begin
+                        btb[update_pc[`BTB_ADDR - 1:0]] <= {update_pc[`WORD_SIZE - 1-:`BTB_TAG], 2'd1, 1'b1, update_target};
+                    end
                 end
             end
         end

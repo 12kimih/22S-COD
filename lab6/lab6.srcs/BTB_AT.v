@@ -9,7 +9,7 @@ module BTB_AT (
         pc,
         pcplusone,
         predpc,
-        update_btb,
+        update,
         update_pc,
         update_target
     );
@@ -21,7 +21,7 @@ module BTB_AT (
     input [`WORD_SIZE - 1:0] pcplusone;
     output [`WORD_SIZE - 1:0] predpc;
 
-    input update_btb;
+    input update;
     input [`WORD_SIZE - 1:0] update_pc;
     input [`WORD_SIZE - 1:0] update_target;
 
@@ -44,7 +44,7 @@ module BTB_AT (
             end
         end
         else begin
-            if (update_btb) begin
+            if (update) begin
                 btb[update_pc[`BTB_ADDR - 1:0]] <= {update_pc[`WORD_SIZE - 1-:`BTB_TAG], 1'b1, update_target};
             end
         end

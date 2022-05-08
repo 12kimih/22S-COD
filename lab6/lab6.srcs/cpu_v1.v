@@ -4,7 +4,7 @@
 `include "opcodes.v"
 
 // 2199 cycles
-// data hazard: no internal forwarding, stall for every RAW hazard
+// data hazard: no forwarding, stall for every RAW hazard
 // control hazard: branch/jump resolution at mem stage, branch predictor assuming always taken
 module cpu_v1 (
         clk,

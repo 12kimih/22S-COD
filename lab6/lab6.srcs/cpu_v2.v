@@ -3,9 +3,9 @@
 `include "constants.v"
 `include "opcodes.v"
 
-// 1854 cycles
-// data hazard: use internal forwarding, stall for every RAW hazard
-// control hazard: branch/jump resolution at mem stage, branch predictor assuming always taken
+// 1393 cycles
+// data hazard: use forwarding, stall only for load-involved RAW hazards
+// control hazard: branch/jump resolution at mem stage, branch predictor using 2-bit saturation counter
 module cpu_v2 (
         clk,
         reset_n,

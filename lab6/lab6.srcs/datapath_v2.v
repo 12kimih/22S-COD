@@ -83,16 +83,32 @@ module datapath_v2 (
     reg [`WORD_SIZE - 1:0] ifid_pcplusone;
     wire [`WORD_SIZE - 1:0] ifid_target;
     reg [`WORD_SIZE - 1:0] ifid_predpc;
-
-    reg ifid_nop;
     reg [`INST_SIZE - 1:0] ifid_ir;
 
-    wire [`REG_ADDR - 1:0] regaddr1;
-    wire [`REG_ADDR - 1:0] regaddr2;
-    wire [`REG_ADDR - 1:0] regaddr3;
-    wire [`WORD_SIZE - 1:0] regdata1;
-    wire [`WORD_SIZE - 1:0] regdata2;
-    wire [`WORD_SIZE - 1:0] extimm;
+    reg ifid_nop;
+    wire ifid_use_rs;
+    wire ifid_use_rt;
+    wire ifid_use_rd;
+    wire ifid_use_imm;
+    wire [`ALUOP_SIZE - 1:0] ifid_aluop;
+    wire ifid_regwrite;
+    wire ifid_memread;
+    wire ifid_memwrite;
+    wire ifid_branch;
+    wire ifid_jump;
+    wire ifid_jmpr;
+    wire ifid_link;
+    wire ifid_wwd;
+    wire ifid_hlt;
+
+    wire [`REG_ADDR - 1:0] ifid_regaddr1;
+    wire [`REG_ADDR - 1:0] ifid_regaddr2;
+    wire [`REG_ADDR - 1:0] ifid_regaddr3;
+    wire [`WORD_SIZE - 1:0] ifid_regdata1;
+    wire [`WORD_SIZE - 1:0] ifid_regdata2;
+    wire [`WORD_SIZE - 1:0] ifid_forward1;
+    wire [`WORD_SIZE - 1:0] ifid_forward2;
+    wire [`WORD_SIZE - 1:0] ifid_extimm;
 
     // idex registers
     reg [`WORD_SIZE - 1:0] idex_pc;
@@ -120,10 +136,9 @@ module datapath_v2 (
     wire [`WORD_SIZE - 1:0] idex_regdata3;
     reg [`WORD_SIZE - 1:0] idex_extimm;
 
-    wire [`WORD_SIZE - 1:0] aluin1;
-    wire [`WORD_SIZE - 1:0] aluin2;
-    wire [`WORD_SIZE - 1:0] aluout;
-    wire bcond;
+    wire [`WORD_SIZE - 1:0] idex_aluin1;
+    wire [`WORD_SIZE - 1:0] idex_aluin2;
+    wire [`WORD_SIZE - 1:0] idex_aluout;
 
     // exmem registers
     reg [`WORD_SIZE - 1:0] exmem_pc;
@@ -136,7 +151,9 @@ module datapath_v2 (
     reg exmem_regwrite;
     reg exmem_memread;
     reg exmem_memwrite;
-    reg exmem_btb;
+    reg exmem_branch;
+    reg exmem_jump;
+    reg exmem_jmpr;
     reg exmem_link;
     reg exmem_wwd;
     reg exmem_hlt;
@@ -169,23 +186,27 @@ module datapath_v2 (
     wire exmem_flush;
     wire memwb_flush;
 
-    BTB_AT btb_unit (.clk(clk),
+    // forward wires
+    wire [1:0] ifid_forward1_mux;
+    wire [1:0] ifid_forward2_mux;
+
+    BTB_2C btb_unit (.clk(clk),
                      .reset_n(reset_n),
                      .pc(pc),
                      .pcplusone(pcplusone),
                      .predpc(predpc),
-                     .update_btb(exmem_btb),
+                     .update(exmem_branch || exmem_jump || exmem_jmpr),
                      .update_pc(exmem_pc),
-                     .update_target(exmem_target));
+                     .update_target(exmem_target),
+                     .update_nextpc(exmem_nextpc));
 
-    hazard_v2 hazard_unit (.use_rs(use_rs),
-                           .use_rt(use_rt),
-                           .regaddr1(regaddr1),
-                           .regaddr2(regaddr2),
+    hazard_v2 hazard_unit (.ifid_use_rs(ifid_use_rs),
+                           .ifid_use_rt(ifid_use_rt),
+                           .ifid_regaddr1(ifid_regaddr1),
+                           .ifid_regaddr2(ifid_regaddr2),
                            .idex_regwrite(idex_regwrite),
-                           .exmem_regwrite(exmem_regwrite),
+                           .idex_memread(idex_memread),
                            .idex_regaddr3(idex_regaddr3),
-                           .exmem_regaddr3(exmem_regaddr3),
                            .exmem_predpc(exmem_predpc),
                            .exmem_nextpc(exmem_nextpc),
                            .exmem_hlt(exmem_hlt),
@@ -198,6 +219,17 @@ module datapath_v2 (
                            .idex_flush(idex_flush),
                            .exmem_flush(exmem_flush),
                            .memwb_flush(memwb_flush));
+
+    forward forward_unit (.ifid_regaddr1(ifid_regaddr1),
+                          .ifid_regaddr2(ifid_regaddr2),
+                          .idex_regwrite(idex_regwrite),
+                          .exmem_regwrite(exmem_regwrite),
+                          .memwb_regwrite(memwb_regwrite),
+                          .idex_regaddr3(idex_regaddr3),
+                          .exmem_regaddr3(exmem_regaddr3),
+                          .memwb_regaddr3(memwb_regaddr3),
+                          .ifid_forward1_mux(ifid_forward1_mux),
+                          .ifid_forward2_mux(ifid_forward2_mux));
 
     // >>> pc >>>
     always @(posedge clk or negedge reset_n) begin
@@ -226,57 +258,81 @@ module datapath_v2 (
             ifid_pc <= `WORD_SIZE'b0;
             ifid_pcplusone <= `WORD_SIZE'b0;
             ifid_predpc <= `WORD_SIZE'b0;
+            ifid_ir <= `INST_SIZE'b0;
 
             ifid_nop <= 1'b1;
-            ifid_ir <= `INST_SIZE'b0;
         end
         else begin
             if (ifid_flush) begin
                 ifid_pc <= `WORD_SIZE'b0;
                 ifid_pcplusone <= `WORD_SIZE'b0;
                 ifid_predpc <= `WORD_SIZE'b0;
+                ifid_ir <= `INST_SIZE'b0;
 
                 ifid_nop <= 1'b1;
-                ifid_ir <= `INST_SIZE'b0;
             end
             else if (ifid_stall) begin
                 ifid_pc <= ifid_pc;
                 ifid_pcplusone <= ifid_pcplusone;
                 ifid_predpc <= ifid_predpc;
+                ifid_ir <= ifid_ir;
 
                 ifid_nop <= ifid_nop;
-                ifid_ir <= ifid_ir;
             end
             else begin
                 ifid_pc <= pc;
                 ifid_pcplusone <= pcplusone;
                 ifid_predpc <= predpc;
+                ifid_ir <= i_data;
 
                 ifid_nop <= 1'b0;
-                ifid_ir <= i_data;
             end
         end
     end
 
-    assign ifid_target = branch ? ifid_pcplusone + extimm : jump ? {ifid_pc[15:12], ifid_ir[11:0]} : jmpr ? regdata1 : ifid_pcplusone;
+    assign ifid_target = ifid_branch ? ifid_pcplusone + ifid_extimm :
+           ifid_jump ? {ifid_pc[15:12], ifid_ir[11:0]} :
+           ifid_jmpr ? ifid_forward1 : ifid_pcplusone;
 
-    assign regaddr1 = ifid_ir[11:10];
-    assign regaddr2 = ifid_ir[9:8];
-    assign regaddr3 = use_rd ? ifid_ir[7:6] : link ? `REG_ADDR'd2 : ifid_ir[9:8];
+    assign ifid_use_rs = use_rs;
+    assign ifid_use_rt = use_rt;
+    assign ifid_use_rd = use_rd;
+    assign ifid_use_imm = use_imm;
+    assign ifid_aluop = aluop;
+    assign ifid_regwrite = regwrite;
+    assign ifid_memread = memread;
+    assign ifid_memwrite = memwrite;
+    assign ifid_branch = branch;
+    assign ifid_jump = jump;
+    assign ifid_jmpr = jmpr;
+    assign ifid_link = link;
+    assign ifid_wwd = wwd;
+    assign ifid_hlt = hlt;
 
-    RF rf_unit (.clk(~clk),
+    assign ifid_regaddr1 = ifid_ir[11:10];
+    assign ifid_regaddr2 = ifid_ir[9:8];
+    assign ifid_regaddr3 = ifid_use_rd ? ifid_ir[7:6] : ifid_link ? `REG_ADDR'd2 : ifid_ir[9:8];
+
+    RF rf_unit (.clk(clk),
                 .reset_n(reset_n),
                 .write(memwb_regwrite),
-                .addr1(regaddr1),
-                .addr2(regaddr2),
+                .addr1(ifid_regaddr1),
+                .addr2(ifid_regaddr2),
                 .addr3(memwb_regaddr3),
-                .data1(regdata1),
-                .data2(regdata2),
+                .data1(ifid_regdata1),
+                .data2(ifid_regdata2),
                 .data3(memwb_regdata3));
+
+    assign ifid_forward1 = (ifid_forward1_mux == 2'd1) ? idex_regdata3 :
+           (ifid_forward1_mux == 2'd2) ? exmem_regdata3 :
+           (ifid_forward1_mux == 2'd3) ? memwb_regdata3 : ifid_regdata1;
+    assign ifid_forward2 = (ifid_forward2_mux == 2'd1) ? idex_regdata3 :
+           (ifid_forward2_mux == 2'd2) ? exmem_regdata3 :
+           (ifid_forward2_mux == 2'd3) ? memwb_regdata3 : ifid_regdata2;
 
     immediate immediate_unit (.opcode(ifid_ir[15:12]),
                               .imm(ifid_ir[7:0]),
-                              .extimm(extimm));
+                              .extimm(ifid_extimm));
     // <<< ifid <<<
 
     // >>> idex >>>
@@ -337,38 +393,36 @@ module datapath_v2 (
                 idex_predpc <= ifid_predpc;
 
                 idex_nop <= ifid_nop;
-                idex_use_imm <= use_imm;
-                idex_aluop <= aluop;
-                idex_regwrite <= regwrite;
-                idex_memread <= memread;
-                idex_memwrite <= memwrite;
-                idex_branch <= branch;
-                idex_jump <= jump;
-                idex_jmpr <= jmpr;
-                idex_link <= link;
-                idex_wwd <= wwd;
-                idex_hlt <= hlt;
+                idex_use_imm <= ifid_use_imm;
+                idex_aluop <= ifid_aluop;
+                idex_regwrite <= ifid_regwrite;
+                idex_memread <= ifid_memread;
+                idex_memwrite <= ifid_memwrite;
+                idex_branch <= ifid_branch;
+                idex_jump <= ifid_jump;
+                idex_jmpr <= ifid_jmpr;
+                idex_link <= ifid_link;
+                idex_wwd <= ifid_wwd;
+                idex_hlt <= ifid_hlt;
 
-                idex_regaddr3 <= regaddr3;
-                idex_regdata1 <= regdata1;
-                idex_regdata2 <= regdata2;
-                idex_extimm <= extimm;
+                idex_regaddr3 <= ifid_regaddr3;
+                idex_regdata1 <= ifid_forward1;
+                idex_regdata2 <= ifid_forward2;
+                idex_extimm <= ifid_extimm;
             end
         end
     end
 
-    assign idex_nextpc = ((idex_branch && bcond) || idex_jump || idex_jmpr) ? idex_target : idex_pcplusone;
-    assign idex_regdata3 = idex_link ? idex_pcplusone : aluout;
+    assign idex_nextpc = ((idex_branch && idex_aluout[0]) || idex_jump || idex_jmpr) ? idex_target : idex_pcplusone;
+    assign idex_regdata3 = idex_link ? idex_pcplusone : idex_aluout;
 
-    assign aluin1 = idex_regdata1;
-    assign aluin2 = idex_use_imm ? idex_extimm : idex_regdata2;
+    assign idex_aluin1 = idex_regdata1;
+    assign idex_aluin2 = idex_use_imm ? idex_extimm : idex_regdata2;
 
     ALU alu_unit (.op(idex_aluop),
-                  .in1(aluin1),
-                  .in2(aluin2),
-                  .out(aluout));
-
-    assign bcond = aluout[0];
+                  .in1(idex_aluin1),
+                  .in2(idex_aluin2),
+                  .out(idex_aluout));
     // <<< idex <<<
 
     // >>> exmem >>>
@@ -384,7 +438,9 @@ module datapath_v2 (
             exmem_regwrite <= 1'b0;
             exmem_memread <= 1'b0;
             exmem_memwrite <= 1'b0;
-            exmem_btb <= 1'b0;
+            exmem_branch <= 1'b0;
+            exmem_jump <= 1'b0;
+            exmem_jmpr <= 1'b0;
             exmem_link <= 1'b0;
             exmem_wwd <= 1'b0;
             exmem_hlt <= 1'b0;
@@ -406,7 +462,9 @@ module datapath_v2 (
                 exmem_regwrite <= 1'b0;
                 exmem_memread <= 1'b0;
                 exmem_memwrite <= 1'b0;
-                exmem_btb <= 1'b0;
+                exmem_branch <= 1'b0;
+                exmem_jump <= 1'b0;
+                exmem_jmpr <= 1'b0;
                 exmem_link <= 1'b0;
                 exmem_wwd <= 1'b0;
                 exmem_hlt <= 1'b0;
@@ -427,7 +485,9 @@ module datapath_v2 (
                 exmem_regwrite <= idex_regwrite;
                 exmem_memread <= idex_memread;
                 exmem_memwrite <= idex_memwrite;
-                exmem_btb <= idex_branch || idex_jump || idex_jmpr;
+                exmem_branch <= idex_branch;
+                exmem_jump <= idex_jump;
+                exmem_jmpr <= idex_jmpr;
                 exmem_link <= idex_link;
                 exmem_wwd <= idex_wwd;
                 exmem_hlt <= idex_hlt;
@@ -435,7 +495,7 @@ module datapath_v2 (
                 exmem_regaddr3 <= idex_regaddr3;
                 exmem_regdata1 <= idex_regdata1;
                 exmem_regdata2 <= idex_regdata2;
-                exmem_aluout <= aluout;
+                exmem_aluout <= idex_aluout;
             end
         end
     end

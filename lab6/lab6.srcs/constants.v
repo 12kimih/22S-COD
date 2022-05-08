@@ -21,8 +21,7 @@
 `define CONTROL_SIGSET   17 // `ALUOP_SIZE + 13
 `define HAZARD_V1_SIGSET 7
 `define HAZARD_V2_SIGSET 7
-`define HAZARD_V3_SIGSET 7
-`define HAZARD_V4_SIGSET 8
+`define HAZARD_V3_SIGSET 8
 
 `define BTB_SIZE     256
 `define BTB_ADDR     8
