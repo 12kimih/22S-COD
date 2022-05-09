@@ -46,14 +46,14 @@ module cpu_v1 (
     wire [`OPCODE_SIZE - 1:0] opcode; // operation code of current instruction
     wire [`FUNC_SIZE - 1:0] func;     // function of current R-type instruction
 
+    wire regwrite;                  // enable register write
+    wire memread;                   // enable data memory read
+    wire memwrite;                  // enable data memory write
     wire use_rs;                    // if current instruction uses rs
     wire use_rt;                    // if current instruction uses rt
     wire use_rd;                    // if current instruction writes rd
     wire use_imm;                   // if current instruction puts immediate into alu
     wire [`ALUOP_SIZE - 1:0] aluop; // alu operation
-    wire regwrite;                  // enable register write
-    wire memread;                   // enable data memory read
-    wire memwrite;                  // enable data memory write
     wire branch;                    // if current instruction is branch (BNE, BEQ, BGZ, BLZ)
     wire jump;                      // if current instruciton is jump (JMP, JAL)
     wire jmpr;                      // if current instruciton is jump register (JPR, JRL)
@@ -63,22 +63,6 @@ module cpu_v1 (
 
     datapath_v1 datapath_unit (.clk(clk),
                                .reset_n(reset_n),
-                               .opcode(opcode),
-                               .func(func),
-                               .use_rs(use_rs),
-                               .use_rt(use_rt),
-                               .use_rd(use_rd),
-                               .use_imm(use_imm),
-                               .aluop(aluop),
-                               .regwrite(regwrite),
-                               .memread(memread),
-                               .memwrite(memwrite),
-                               .branch(branch),
-                               .jump(jump),
-                               .jmpr(jmpr),
-                               .link(link),
-                               .wwd(wwd),
-                               .hlt(hlt),
                                .i_readM(i_readM),
                                .i_writeM(i_writeM),
                                .i_address(i_address),
@@ -89,18 +73,34 @@ module cpu_v1 (
                                .d_data(d_data),
                                .num_inst(num_inst),
                                .output_port(output_port),
-                               .is_halted(is_halted));
+                               .is_halted(is_halted),
+                               .opcode(opcode),
+                               .func(func),
+                               .regwrite(regwrite),
+                               .memread(memread),
+                               .memwrite(memwrite),
+                               .use_rs(use_rs),
+                               .use_rt(use_rt),
+                               .use_rd(use_rd),
+                               .use_imm(use_imm),
+                               .aluop(aluop),
+                               .branch(branch),
+                               .jump(jump),
+                               .jmpr(jmpr),
+                               .link(link),
+                               .wwd(wwd),
+                               .hlt(hlt));
 
     control control_unit (.opcode(opcode),
                           .func(func),
+                          .regwrite(regwrite),
+                          .memread(memread),
+                          .memwrite(memwrite),
                           .use_rs(use_rs),
                           .use_rt(use_rt),
                           .use_rd(use_rd),
                           .use_imm(use_imm),
                           .aluop(aluop),
-                          .regwrite(regwrite),
-                          .memread(memread),
-                          .memwrite(memwrite),
                           .branch(branch),
                           .jump(jump),
                           .jmpr(jmpr),

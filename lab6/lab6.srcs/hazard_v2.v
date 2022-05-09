@@ -14,7 +14,6 @@ module hazard_v2 (
         exmem_nextpc,
         exmem_hlt,
         memwb_hlt,
-        is_halted,
         pc_stall,
         ifid_stall,
         pc_flush,
@@ -38,7 +37,6 @@ module hazard_v2 (
     input [`WORD_SIZE - 1:0] exmem_nextpc;
     input exmem_hlt;
     input memwb_hlt;
-    input is_halted;
 
     // hazard resolution
     output pc_stall;
@@ -54,7 +52,7 @@ module hazard_v2 (
     assign {pc_stall, ifid_stall, pc_flush, ifid_flush, idex_flush, exmem_flush, memwb_flush} = sigset;
 
     always @(*) begin
-        if (is_halted || memwb_hlt) begin
+        if (memwb_hlt) begin
             sigset = {1'b1, 1'b0, 1'b0, 1'b1, 1'b1, 1'b1, 1'b1};
         end
         else if (exmem_hlt || exmem_predpc != exmem_nextpc) begin

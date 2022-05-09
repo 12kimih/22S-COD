@@ -6,22 +6,6 @@
 module datapath_v1 (
         clk,
         reset_n,
-        opcode,
-        func,
-        use_rs,
-        use_rt,
-        use_rd,
-        use_imm,
-        aluop,
-        regwrite,
-        memread,
-        memwrite,
-        branch,
-        jump,
-        jmpr,
-        link,
-        wwd,
-        hlt,
         i_readM,
         i_writeM,
         i_address,
@@ -32,30 +16,27 @@ module datapath_v1 (
         d_data,
         num_inst,
         output_port,
-        is_halted
+        is_halted,
+        opcode,
+        func,
+        regwrite,
+        memread,
+        memwrite,
+        use_rs,
+        use_rt,
+        use_rd,
+        use_imm,
+        aluop,
+        branch,
+        jump,
+        jmpr,
+        link,
+        wwd,
+        hlt
     );
 
     input clk;     // clock
     input reset_n; // active-low reset
-
-    // control interface
-    output [`OPCODE_SIZE - 1:0] opcode; // operation code of current instruction
-    output [`FUNC_SIZE - 1:0] func;     // function of current R-type instruction
-
-    input use_rs;                    // if current instruction uses rs
-    input use_rt;                    // if current instruction uses rt
-    input use_rd;                    // if current instruction writes rd
-    input use_imm;                   // if current instruction puts immediate into alu
-    input [`ALUOP_SIZE - 1:0] aluop; // alu operation
-    input regwrite;                  // enable register write
-    input memread;                   // enable data memory read
-    input memwrite;                  // enable data memory write
-    input branch;                    // if current instruction is branch (BNE, BEQ, BGZ, BLZ)
-    input jump;                      // if current instruciton is jump (JMP, JAL)
-    input jmpr;                      // if current instruciton is jump register (JPR, JRL)
-    input link;                      // if current instruciton links register (JAL, JRL)
-    input wwd;                       // if current instruction is WWD
-    input hlt;                       // if current instruction is HLT
 
     // instruction memory interface
     output i_readM;                      // enable instruction memory read
@@ -74,6 +55,25 @@ module datapath_v1 (
     output reg [`WORD_SIZE - 1:0] output_port; // WWD output port
     output reg is_halted;                      // HLT indicator
 
+    // control interface
+    output [`OPCODE_SIZE - 1:0] opcode; // operation code of current instruction
+    output [`FUNC_SIZE - 1:0] func;     // function of current R-type instruction
+
+    input regwrite;                  // enable register write
+    input memread;                   // enable data memory read
+    input memwrite;                  // enable data memory write
+    input use_rs;                    // if current instruction uses rs
+    input use_rt;                    // if current instruction uses rt
+    input use_rd;                    // if current instruction writes rd
+    input use_imm;                   // if current instruction puts immediate into alu
+    input [`ALUOP_SIZE - 1:0] aluop; // alu operation
+    input branch;                    // if current instruction is branch (BNE, BEQ, BGZ, BLZ)
+    input jump;                      // if current instruciton is jump (JMP, JAL)
+    input jmpr;                      // if current instruciton is jump register (JPR, JRL)
+    input link;                      // if current instruciton links register (JAL, JRL)
+    input wwd;                       // if current instruction is WWD
+    input hlt;                       // if current instruction is HLT
+
     // pc registers
     reg [`WORD_SIZE - 1:0] pc;
     wire [`WORD_SIZE - 1:0] pcplusone;
@@ -86,14 +86,14 @@ module datapath_v1 (
     reg [`INST_SIZE - 1:0] ifid_ir;
 
     reg ifid_nop;
+    wire ifid_regwrite;
+    wire ifid_memread;
+    wire ifid_memwrite;
     wire ifid_use_rs;
     wire ifid_use_rt;
     wire ifid_use_rd;
     wire ifid_use_imm;
     wire [`ALUOP_SIZE - 1:0] ifid_aluop;
-    wire ifid_regwrite;
-    wire ifid_memread;
-    wire ifid_memwrite;
     wire ifid_branch;
     wire ifid_jump;
     wire ifid_jmpr;
@@ -116,11 +116,11 @@ module datapath_v1 (
     wire [`WORD_SIZE - 1:0] idex_nextpc;
 
     reg idex_nop;
-    reg idex_use_imm;
-    reg [`ALUOP_SIZE - 1:0] idex_aluop;
     reg idex_regwrite;
     reg idex_memread;
     reg idex_memwrite;
+    reg idex_use_imm;
+    reg [`ALUOP_SIZE - 1:0] idex_aluop;
     reg idex_branch;
     reg idex_jump;
     reg idex_jmpr;
@@ -207,7 +207,6 @@ module datapath_v1 (
                            .exmem_nextpc(exmem_nextpc),
                            .exmem_hlt(exmem_hlt),
                            .memwb_hlt(memwb_hlt),
-                           .is_halted(is_halted),
                            .pc_stall(pc_stall),
                            .ifid_stall(ifid_stall),
                            .pc_flush(pc_flush),
@@ -279,14 +278,14 @@ module datapath_v1 (
            ifid_jump ? {ifid_pc[15:12], ifid_ir[11:0]} :
            ifid_jmpr ? ifid_regdata1 : ifid_pcplusone;
 
+    assign ifid_regwrite = regwrite;
+    assign ifid_memread = memread;
+    assign ifid_memwrite = memwrite;
     assign ifid_use_rs = use_rs;
     assign ifid_use_rt = use_rt;
     assign ifid_use_rd = use_rd;
     assign ifid_use_imm = use_imm;
     assign ifid_aluop = aluop;
-    assign ifid_regwrite = regwrite;
-    assign ifid_memread = memread;
-    assign ifid_memwrite = memwrite;
     assign ifid_branch = branch;
     assign ifid_jump = jump;
     assign ifid_jmpr = jmpr;
@@ -322,11 +321,11 @@ module datapath_v1 (
             idex_predpc <= `WORD_SIZE'b0;
 
             idex_nop <= 1'b1;
-            idex_use_imm <= 1'b0;
-            idex_aluop <= `ALUOP_ADD;
             idex_regwrite <= 1'b0;
             idex_memread <= 1'b0;
             idex_memwrite <= 1'b0;
+            idex_use_imm <= 1'b0;
+            idex_aluop <= `ALUOP_ADD;
             idex_branch <= 1'b0;
             idex_jump <= 1'b0;
             idex_jmpr <= 1'b0;
@@ -347,11 +346,11 @@ module datapath_v1 (
                 idex_predpc <= `WORD_SIZE'b0;
 
                 idex_nop <= 1'b1;
-                idex_use_imm <= 1'b0;
-                idex_aluop <= `ALUOP_ADD;
                 idex_regwrite <= 1'b0;
                 idex_memread <= 1'b0;
                 idex_memwrite <= 1'b0;
+                idex_use_imm <= 1'b0;
+                idex_aluop <= `ALUOP_ADD;
                 idex_branch <= 1'b0;
                 idex_jump <= 1'b0;
                 idex_jmpr <= 1'b0;
@@ -371,11 +370,11 @@ module datapath_v1 (
                 idex_predpc <= ifid_predpc;
 
                 idex_nop <= ifid_nop;
-                idex_use_imm <= ifid_use_imm;
-                idex_aluop <= ifid_aluop;
                 idex_regwrite <= ifid_regwrite;
                 idex_memread <= ifid_memread;
                 idex_memwrite <= ifid_memwrite;
+                idex_use_imm <= ifid_use_imm;
+                idex_aluop <= ifid_aluop;
                 idex_branch <= ifid_branch;
                 idex_jump <= ifid_jump;
                 idex_jmpr <= ifid_jmpr;
@@ -525,6 +524,7 @@ module datapath_v1 (
     assign i_readM = 1'b1;
     assign i_writeM = 1'b0;
     assign i_address = pc;
+
     assign d_readM = exmem_memread;
     assign d_writeM = exmem_memwrite;
     assign d_address = exmem_aluout;
