@@ -2,24 +2,23 @@
 
 `include "constants.v"
 
-module cpu_tb_full;
+module cpu_tb;
     reg clk;     // clock
     reg reset_n; // active-low reset
 
     // instruction memory interface
-    wire i_inputReady;                 // if instruction memory read is done
     wire i_readM;                      // enable instruction memory read
     wire i_writeM;                     // enable instruction memory write
     wire [`WORD_SIZE - 1:0] i_address; // instruction memory inout data address
     wire [`WORD_SIZE - 1:0] i_data;    // instruction memory inout data
 
     // data memory interface
-    wire d_inputReady;                 // if data memory read is done
     wire d_readM;                      // enable data memory read
     wire d_writeM;                     // enable data memory write
     wire [`WORD_SIZE - 1:0] d_address; // data memory inout data address
     wire [`WORD_SIZE - 1:0] d_data;    // data memory inout data
 
+    // cpu interface
     wire [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
     wire [`WORD_SIZE - 1:0] output_port; // WWD output port
     wire is_halted;                      // HLT indicator
@@ -27,12 +26,10 @@ module cpu_tb_full;
     // instantiate the unit under test
     cpu cpu_unit (.clk(clk),
                   .reset_n(reset_n),
-                  .i_inputReady(i_inputReady),
                   .i_readM(i_readM),
                   .i_writeM(i_writeM),
                   .i_address(i_address),
                   .i_data(i_data),
-                  .d_inputReady(d_inputReady),
                   .d_readM(d_readM),
                   .d_writeM(d_writeM),
                   .d_address(d_address),
@@ -41,24 +38,23 @@ module cpu_tb_full;
                   .output_port(output_port),
                   .is_halted(is_halted));
 
-    memory i_memory_unit (.readM(i_readM),
-                          .writeM(i_writeM),
-                          .inputReady(i_inputReady),
-                          .address(i_address),
-                          .data(i_data));
-
-    memory d_memory_unit (.readM(d_readM),
-                          .writeM(d_writeM),
-                          .inputReady(d_inputReady),
-                          .address(d_address),
-                          .data(d_data));
+    memory memory_unit (.clk(clk),
+                        .reset_n(reset_n),
+                        .i_readM(i_readM),
+                        .i_writeM(i_writeM),
+                        .i_address(i_address),
+                        .i_data(i_data),
+                        .d_readM(d_readM),
+                        .d_writeM(d_writeM),
+                        .d_address(d_address),
+                        .d_data(d_data));
 
     // initialize inputs
     initial begin
         clk = 0;
         reset_n = 1;
         #(`PERIOD1 / 4) reset_n = 0;
-        #`PERIOD1 reset_n = 1;
+        #(`PERIOD1 + `PERIOD1 / 2) reset_n = 1;
     end
 
     // generate the clock
@@ -68,10 +64,10 @@ module cpu_tb_full;
 
     initial #(`PERIOD1 * 10000) -> testbench_finish; // Only 10,000 cycles are allowed.
 
-    reg [`TESTID_SIZE * 8 - 1:0] TestID [0:`NUM_TEST - 1];
-    reg [`WORD_SIZE - 1:0] TestNumInst [0:`NUM_TEST - 1];
-    reg [`WORD_SIZE - 1:0] TestAns [0:`NUM_TEST - 1];
-    reg TestPassed [0:`NUM_TEST - 1];
+    reg [`TESTID_SIZE * 8 - 1:0] TestID [`NUM_TEST - 1:0];
+    reg [`WORD_SIZE - 1:0] TestNumInst [`NUM_TEST - 1:0];
+    reg [`WORD_SIZE - 1:0] TestAns [`NUM_TEST - 1:0];
+    reg TestPassed [`NUM_TEST - 1:0];
 
     initial begin
         TestID[0] <= "1-1"; TestNumInst[0] <= 16'h0003; TestAns[0] <= 16'h0000; TestPassed[0] <= 1'bx;
@@ -142,12 +138,12 @@ module cpu_tb_full;
                 if (num_inst == TestNumInst[i]) begin
                     if (output_port == TestAns[i]) begin
                         TestPassed[i] = 1'b1;
-                        $display("Test #%s has been succeeded", TestID[i]);
                     end
                     else begin
                         TestPassed[i] = 1'b0;
                         $display("Test #%s has been failed!", TestID[i]);
                         $display("output_port = 0x%0x (Ans : 0x%0x)", output_port, TestAns[i]);
+                        -> testbench_finish;
                     end
                 end
             end

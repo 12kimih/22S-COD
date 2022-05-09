@@ -2,10 +2,6 @@
 `define CONSTANTS_V
 
 `define PERIOD1     100
-`define READ_DELAY  30
-`define WRITE_DELAY 30
-`define STABLE_TIME 10
-
 `define NUM_TEST    56
 `define TESTID_SIZE 5
 
@@ -21,7 +17,7 @@
 `define TARGET_SIZE 12
 `define EXT_SIZE    8 // `WORD_SIZE - `IMM_SIZE
 
-`define ALUOP_SIZE  4
-`define SIGSET_SIZE 17 // `ALUOP_SIZE + 13
+`define ALUOP_SIZE     4
+`define CONTROL_SIGSET 15 // `ALUOP_SIZE + 11
 
 `endif

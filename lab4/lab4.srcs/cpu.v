@@ -3,15 +3,14 @@
 `include "constants.v"
 `include "opcodes.v"
 
+// 983 cycles
 module cpu (
         clk,
         reset_n,
-        i_inputReady,
         i_readM,
         i_writeM,
         i_address,
         i_data,
-        d_inputReady,
         d_readM,
         d_writeM,
         d_address,
@@ -25,70 +24,79 @@ module cpu (
     input reset_n; // active-low reset
 
     // instruction memory interface
-    input i_inputReady;                  // if instruction memory read is done
     output i_readM;                      // enable instruction memory read
     output i_writeM;                     // enable instruction memory write
     output [`WORD_SIZE - 1:0] i_address; // instruction memory inout data address
     inout [`WORD_SIZE - 1:0] i_data;     // instruction memory inout data
 
     // data memory interface
-    input d_inputReady;                  // if data memory read is done
     output d_readM;                      // enable data memory read
     output d_writeM;                     // enable data memory write
     output [`WORD_SIZE - 1:0] d_address; // data memory inout data address
     inout [`WORD_SIZE - 1:0] d_data;     // data memory inout data
 
+    // cpu interface
     output [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
     output [`WORD_SIZE - 1:0] output_port; // WWD output port
     output is_halted;                      // HLT indicator
 
+    // control interface
     wire [`OPCODE_SIZE - 1:0] opcode; // operation code of current instruction
-    wire [`FUNC_SIZE - 1:0] func;     // function of current R-format instruction
+    wire [`FUNC_SIZE - 1:0] func;     // function of current R-type instruction
 
-    wire [1:0] pcmux;               // PC mux [0:pcplusone|1:{PC[15:12], IR[11:0]}|2:regdata1]
     wire regwrite;                  // enable register write
-    wire [1:0] regaddr3mux;         // register address 3 mux [0:IR[9:8]|1:IR[7:6]|2:`REG_ADDR'd2]
-    wire [1:0] regdata3mux;         // register data 3 mux [0:aluout|1:MDR|2:pcplusone]
-    wire [`ALUOP_SIZE - 1:0] aluop; // ALU operation
-    wire aluin2mux;                 // ALU input 2 [0:regdata2|1:extimm]
-    wire branch;                    // if current instruction is branch
+    wire memread;                   // enable data memory read
+    wire memwrite;                  // enable data memory write
+    wire use_rd;                    // if current instruction writes rd
+    wire use_imm;                   // if current instruction puts immediate into alu
+    wire [`ALUOP_SIZE - 1:0] aluop; // alu operation
+    wire branch;                    // if current instruction is branch (BNE, BEQ, BGZ, BLZ)
+    wire jump;                      // if current instruciton is jump (JMP, JAL)
+    wire jmpr;                      // if current instruciton is jump register (JPR, JRL)
+    wire link;                      // if current instruciton links register (JAL, JRL)
     wire wwd;                       // if current instruction is WWD
+    wire hlt;                       // if current instruction is HLT
 
     datapath datapath_unit (.clk(clk),
                             .reset_n(reset_n),
-                            .opcode(opcode),
-                            .func(func),
-                            .pcmux(pcmux),
-                            .d_memwrite(d_writeM),
-                            .regwrite(regwrite),
-                            .regaddr3mux(regaddr3mux),
-                            .regdata3mux(regdata3mux),
-                            .aluop(aluop),
-                            .aluin2mux(aluin2mux),
-                            .branch(branch),
-                            .wwd(wwd),
-                            .hlt(is_halted),
-                            .i_inputReady(i_inputReady),
-                            .i_memread(i_readM),
+                            .i_readM(i_readM),
+                            .i_writeM(i_writeM),
                             .i_address(i_address),
                             .i_data(i_data),
-                            .d_inputReady(d_inputReady),
+                            .d_readM(d_readM),
+                            .d_writeM(d_writeM),
                             .d_address(d_address),
                             .d_data(d_data),
                             .num_inst(num_inst),
-                            .output_port(output_port));
+                            .output_port(output_port),
+                            .is_halted(is_halted),
+                            .opcode(opcode),
+                            .func(func),
+                            .regwrite(regwrite),
+                            .memread(memread),
+                            .memwrite(memwrite),
+                            .use_rd(use_rd),
+                            .use_imm(use_imm),
+                            .aluop(aluop),
+                            .branch(branch),
+                            .jump(jump),
+                            .jmpr(jmpr),
+                            .link(link),
+                            .wwd(wwd),
+                            .hlt(hlt));
 
     control control_unit (.opcode(opcode),
                           .func(func),
-                          .pcmux(pcmux),
-                          .d_memread(d_readM),
-                          .d_memwrite(d_writeM),
                           .regwrite(regwrite),
-                          .regaddr3mux(regaddr3mux),
-                          .regdata3mux(regdata3mux),
+                          .memread(memread),
+                          .memwrite(memwrite),
+                          .use_rd(use_rd),
+                          .use_imm(use_imm),
                           .aluop(aluop),
-                          .aluin2mux(aluin2mux),
                           .branch(branch),
+                          .jump(jump),
+                          .jmpr(jmpr),
+                          .link(link),
                           .wwd(wwd),
-                          .hlt(is_halted));
+                          .hlt(hlt));
 endmodule
