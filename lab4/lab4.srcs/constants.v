@@ -18,6 +18,6 @@
 `define EXT_SIZE    8 // `WORD_SIZE - `IMM_SIZE
 
 `define ALUOP_SIZE     4
-`define CONTROL_SIGSET 15 // `ALUOP_SIZE + 11
+`define CONTROL_SIGSET 16 // `ALUOP_SIZE + 12
 
 `endif

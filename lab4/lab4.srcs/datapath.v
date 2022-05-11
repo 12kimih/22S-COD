@@ -25,6 +25,7 @@ module datapath (
         use_rd,
         use_imm,
         aluop,
+        load,
         branch,
         jump,
         jmpr,
@@ -60,15 +61,16 @@ module datapath (
     input regwrite;                  // enable register write
     input memread;                   // enable data memory read
     input memwrite;                  // enable data memory write
-    input use_rd;                    // if current instruction writes rd
-    input use_imm;                   // if current instruction puts immediate into alu
+    input use_rd;                    // if current instruction uses rd
+    input use_imm;                   // if current instruction uses immediate
     input [`ALUOP_SIZE - 1:0] aluop; // alu operation
-    input branch;                    // if current instruction is branch (BNE, BEQ, BGZ, BLZ)
-    input jump;                      // if current instruciton is jump (JMP, JAL)
-    input jmpr;                      // if current instruciton is jump register (JPR, JRL)
-    input link;                      // if current instruciton links register (JAL, JRL)
-    input wwd;                       // if current instruction is WWD
-    input hlt;                       // if current instruction is HLT
+    input load;                      // if current instruction loads memory data into register (LWD)
+    input branch;                    // if current instruction contains branch control flow (BNE, BEQ, BGZ, BLZ)
+    input jump;                      // if current instruciton contains jump control flow (JMP, JAL)
+    input jmpr;                      // if current instruciton contains jump register control flow (JPR, JRL)
+    input link;                      // if current instruciton links register to next address (JAL, JRL)
+    input wwd;                       // if current instruction writes output port (WWD)
+    input hlt;                       // if current instruction halts the machine (HLT)
 
     reg [`WORD_SIZE - 1:0] pc;
     wire [`WORD_SIZE - 1:0] pcplusone;
@@ -90,9 +92,7 @@ module datapath (
             pc <= `WORD_SIZE'd0;
         end
         else begin
-            pc <= (branch && aluout[0]) ? pcplusone + extimm :
-               jump ? {pc[15:12], i_data[11:0]} :
-               jmpr ? regdata1 : pcplusone;
+            pc <= (branch && aluout[0]) ? pcplusone + extimm : jump ? {pc[15:12], i_data[11:0]} : jmpr ? regdata1 : pcplusone;
         end
     end
 
@@ -100,10 +100,8 @@ module datapath (
 
     assign regaddr1 = i_data[11:10];
     assign regaddr2 = i_data[9:8];
-    assign regaddr3 = use_rd ? i_data[7:6] :
-           link ? `REG_ADDR'd2 : i_data[9:8];
-    assign regdata3 = memread ? d_data :
-           link ? pcplusone : aluout;
+    assign regaddr3 = use_rd ? i_data[7:6] : link ? `REG_ADDR'd2 : i_data[9:8];
+    assign regdata3 = load ? d_data : link ? pcplusone : aluout;
 
     RF rf (.clk(clk),
            .reset_n(reset_n),

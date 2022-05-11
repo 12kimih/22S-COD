@@ -47,15 +47,16 @@ module cpu (
     wire regwrite;                  // enable register write
     wire memread;                   // enable data memory read
     wire memwrite;                  // enable data memory write
-    wire use_rd;                    // if current instruction writes rd
-    wire use_imm;                   // if current instruction puts immediate into alu
+    wire use_rd;                    // if current instruction uses rd
+    wire use_imm;                   // if current instruction uses immediate
     wire [`ALUOP_SIZE - 1:0] aluop; // alu operation
-    wire branch;                    // if current instruction is branch (BNE, BEQ, BGZ, BLZ)
-    wire jump;                      // if current instruciton is jump (JMP, JAL)
-    wire jmpr;                      // if current instruciton is jump register (JPR, JRL)
-    wire link;                      // if current instruciton links register (JAL, JRL)
-    wire wwd;                       // if current instruction is WWD
-    wire hlt;                       // if current instruction is HLT
+    wire load;                      // if current instruction loads memory data into register (LWD)
+    wire branch;                    // if current instruction contains branch control flow (BNE, BEQ, BGZ, BLZ)
+    wire jump;                      // if current instruciton contains jump control flow (JMP, JAL)
+    wire jmpr;                      // if current instruciton contains jump register control flow (JPR, JRL)
+    wire link;                      // if current instruciton links register to next address (JAL, JRL)
+    wire wwd;                       // if current instruction writes output port (WWD)
+    wire hlt;                       // if current instruction halts the machine (HLT)
 
     datapath datapath_unit (.clk(clk),
                             .reset_n(reset_n),
@@ -78,6 +79,7 @@ module cpu (
                             .use_rd(use_rd),
                             .use_imm(use_imm),
                             .aluop(aluop),
+                            .load(load),
                             .branch(branch),
                             .jump(jump),
                             .jmpr(jmpr),
@@ -93,6 +95,7 @@ module cpu (
                           .use_rd(use_rd),
                           .use_imm(use_imm),
                           .aluop(aluop),
+                          .load(load),
                           .branch(branch),
                           .jump(jump),
                           .jmpr(jmpr),
