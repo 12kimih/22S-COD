@@ -3,6 +3,7 @@
 `include "constants.v"
 `include "opcodes.v"
 
+// 3490 cycles
 module cpu (
         clk,
         reset_n,
@@ -43,17 +44,17 @@ module cpu (
     wire dmemread;                   // enable data memory read
     wire dmemwrite;                  // enable data memory write
     wire use_rd;                     // if current instruction uses rd
-    wire add_pc;                     // advance pc to next address
-    wire use_aor;                    // if current instruction uses aor as alu in1
-    wire use_imm;                    // if current instruction uses immediate as alu in2
+    wire add_pc;                     // compute the next pc address
+    wire use_aor;                    // if current instruction uses aor
+    wire use_imm;                    // if current instruction uses immediate
     wire [`ALUOP_SIZE - 1:0] aluop;  // alu operation
-    wire load;                       // if current instruction is load (LWD)
-    wire branch;                     // if current instruction is branch (BNE, BEQ, BGZ, BLZ)
-    wire jump;                       // if current instruciton is jump (JMP, JAL)
-    wire jmpr;                       // if current instruciton is jump register (JPR, JRL)
-    wire link;                       // if current instruciton links register (JAL, JRL)
-    wire wwd;                        // if current instruction is WWD
-    wire hlt;                        // if current instruction is HLT
+    wire load;                       // if current instruction loads memory data into register (LWD)
+    wire branch;                     // if current instruction contains branch control flow (BNE, BEQ, BGZ, BLZ)
+    wire jump;                       // if current instruciton contains jump control flow (JMP, JAL)
+    wire jmpr;                       // if current instruciton contains jump register control flow (JPR, JRL)
+    wire link;                       // if current instruciton links register to the next pc address (JAL, JRL)
+    wire wwd;                        // if current instruction writes the output port (WWD)
+    wire hlt;                        // if current instruction halts the machine (HLT)
 
     datapath datapath_unit (.clk(clk),
                             .reset_n(reset_n),

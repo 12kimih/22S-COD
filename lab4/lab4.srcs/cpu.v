@@ -54,8 +54,8 @@ module cpu (
     wire branch;                    // if current instruction contains branch control flow (BNE, BEQ, BGZ, BLZ)
     wire jump;                      // if current instruciton contains jump control flow (JMP, JAL)
     wire jmpr;                      // if current instruciton contains jump register control flow (JPR, JRL)
-    wire link;                      // if current instruciton links register to next address (JAL, JRL)
-    wire wwd;                       // if current instruction writes output port (WWD)
+    wire link;                      // if current instruciton links register to the next pc address (JAL, JRL)
+    wire wwd;                       // if current instruction writes the output port (WWD)
     wire hlt;                       // if current instruction halts the machine (HLT)
 
     datapath datapath_unit (.clk(clk),

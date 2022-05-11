@@ -68,8 +68,8 @@ module datapath (
     input branch;                    // if current instruction contains branch control flow (BNE, BEQ, BGZ, BLZ)
     input jump;                      // if current instruciton contains jump control flow (JMP, JAL)
     input jmpr;                      // if current instruciton contains jump register control flow (JPR, JRL)
-    input link;                      // if current instruciton links register to next address (JAL, JRL)
-    input wwd;                       // if current instruction writes output port (WWD)
+    input link;                      // if current instruciton links register to the next pc address (JAL, JRL)
+    input wwd;                       // if current instruction writes the output port (WWD)
     input hlt;                       // if current instruction halts the machine (HLT)
 
     reg [`WORD_SIZE - 1:0] pc;

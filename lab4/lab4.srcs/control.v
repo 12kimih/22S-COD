@@ -34,8 +34,8 @@ module control (
     output branch;                    // if current instruction contains branch control flow (BNE, BEQ, BGZ, BLZ)
     output jump;                      // if current instruciton contains jump control flow (JMP, JAL)
     output jmpr;                      // if current instruciton contains jump register control flow (JPR, JRL)
-    output link;                      // if current instruciton links register to next address (JAL, JRL)
-    output wwd;                       // if current instruction writes output port (WWD)
+    output link;                      // if current instruciton links register to the next pc address (JAL, JRL)
+    output wwd;                       // if current instruction writes the output port (WWD)
     output hlt;                       // if current instruction halts the machine (HLT)
 
     reg [`CONTROL_SIGSET - 1:0] sigset;

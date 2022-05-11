@@ -62,17 +62,17 @@ module datapath (
     input dmemread;                   // enable data memory read
     input dmemwrite;                  // enable data memory write
     input use_rd;                     // if current instruction uses rd
-    input add_pc;                     // advance pc to next address
-    input use_aor;                    // if current instruction uses aor as alu in1
-    input use_imm;                    // if current instruction uses immediate as alu in2
+    input add_pc;                     // compute the next pc address
+    input use_aor;                    // if current instruction uses aor
+    input use_imm;                    // if current instruction uses immediate
     input [`ALUOP_SIZE - 1:0] aluop;  // alu operation
-    input load;                       // if current instruction is load (LWD)
-    input branch;                     // if current instruction is branch (BNE, BEQ, BGZ, BLZ)
-    input jump;                       // if current instruciton is jump (JMP, JAL)
-    input jmpr;                       // if current instruciton is jump register (JPR, JRL)
-    input link;                       // if current instruciton links register (JAL, JRL)
-    input wwd;                        // if current instruction is WWD
-    input hlt;                        // if current instruction is HLT
+    input load;                       // if current instruction loads memory data into register (LWD)
+    input branch;                     // if current instruction contains branch control flow (BNE, BEQ, BGZ, BLZ)
+    input jump;                       // if current instruciton contains jump control flow (JMP, JAL)
+    input jmpr;                       // if current instruciton contains jump register control flow (JPR, JRL)
+    input link;                       // if current instruciton links register to the next pc address (JAL, JRL)
+    input wwd;                        // if current instruction writes the output port (WWD)
+    input hlt;                        // if current instruction halts the machine (HLT)
 
     reg [`WORD_SIZE - 1:0] pc;
     reg [`INST_SIZE - 1:0] ir;

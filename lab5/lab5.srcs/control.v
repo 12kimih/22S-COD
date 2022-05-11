@@ -43,17 +43,17 @@ module control (
     output dmemread;                   // enable data memory read
     output dmemwrite;                  // enable data memory write
     output use_rd;                     // if current instruction uses rd
-    output add_pc;                     // advance pc to next address
-    output use_aor;                    // if current instruction uses aor as alu in1
-    output use_imm;                    // if current instruction uses immediate as alu in2
+    output add_pc;                     // compute the next pc address
+    output use_aor;                    // if current instruction uses aor
+    output use_imm;                    // if current instruction uses immediate
     output [`ALUOP_SIZE - 1:0] aluop;  // alu operation
-    output load;                       // if current instruction is load (LWD)
-    output branch;                     // if current instruction is branch (BNE, BEQ, BGZ, BLZ)
-    output jump;                       // if current instruciton is jump (JMP, JAL)
-    output jmpr;                       // if current instruciton is jump register (JPR, JRL)
-    output link;                       // if current instruciton links register (JAL, JRL)
-    output wwd;                        // if current instruction is WWD
-    output hlt;                        // if current instruction is HLT
+    output load;                       // if current instruction loads memory data into register (LWD)
+    output branch;                     // if current instruction contains branch control flow (BNE, BEQ, BGZ, BLZ)
+    output jump;                       // if current instruciton contains jump control flow (JMP, JAL)
+    output jmpr;                       // if current instruciton contains jump register control flow (JPR, JRL)
+    output link;                       // if current instruciton links register to the next pc address (JAL, JRL)
+    output wwd;                        // if current instruction writes the output port (WWD)
+    output hlt;                        // if current instruction halts the machine (HLT)
 
     reg [`STATE_SIZE - 1:0] state;
 
