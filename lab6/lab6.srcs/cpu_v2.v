@@ -37,7 +37,7 @@ module cpu_v2 (
     output [`WORD_SIZE - 1:0] d_address; // data memory inout data address
     inout [`WORD_SIZE - 1:0] d_data;     // data memory inout data
 
-    // cpu interface
+    // debug interface
     output [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
     output [`WORD_SIZE - 1:0] output_port; // WWD output port
     output is_halted;                      // HLT indicator
@@ -51,15 +51,16 @@ module cpu_v2 (
     wire memwrite;                  // enable data memory write
     wire use_rs;                    // if current instruction uses rs
     wire use_rt;                    // if current instruction uses rt
-    wire use_rd;                    // if current instruction writes rd
-    wire use_imm;                   // if current instruction puts immediate into alu
+    wire use_rd;                    // if current instruction uses rd
+    wire use_imm;                   // if current instruction uses immediate
     wire [`ALUOP_SIZE - 1:0] aluop; // alu operation
-    wire branch;                    // if current instruction is branch (BNE, BEQ, BGZ, BLZ)
-    wire jump;                      // if current instruciton is jump (JMP, JAL)
-    wire jmpr;                      // if current instruciton is jump register (JPR, JRL)
-    wire link;                      // if current instruciton links register (JAL, JRL)
-    wire wwd;                       // if current instruction is WWD
-    wire hlt;                       // if current instruction is HLT
+    wire load;                      // if current instruction loads memory data into register (LWD)
+    wire branch;                    // if current instruction contains branch control flow (BNE, BEQ, BGZ, BLZ)
+    wire jump;                      // if current instruciton contains jump control flow (JMP, JAL)
+    wire jmpr;                      // if current instruciton contains jump register control flow (JPR, JRL)
+    wire link;                      // if current instruciton links register to the next pc address (JAL, JRL)
+    wire wwd;                       // if current instruction writes the output port (WWD)
+    wire hlt;                       // if current instruction halts the machine (HLT)
 
     datapath_v2 datapath_unit (.clk(clk),
                                .reset_n(reset_n),
@@ -84,6 +85,7 @@ module cpu_v2 (
                                .use_rd(use_rd),
                                .use_imm(use_imm),
                                .aluop(aluop),
+                               .load(load),
                                .branch(branch),
                                .jump(jump),
                                .jmpr(jmpr),
@@ -101,6 +103,7 @@ module cpu_v2 (
                           .use_rd(use_rd),
                           .use_imm(use_imm),
                           .aluop(aluop),
+                          .load(load),
                           .branch(branch),
                           .jump(jump),
                           .jmpr(jmpr),

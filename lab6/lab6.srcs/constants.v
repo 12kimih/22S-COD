@@ -18,7 +18,7 @@
 `define EXT_SIZE    8 // `WORD_SIZE - `IMM_SIZE
 
 `define ALUOP_SIZE       4
-`define CONTROL_SIGSET   17 // `ALUOP_SIZE + 13
+`define CONTROL_SIGSET   18 // `ALUOP_SIZE + 14
 `define HAZARD_V1_SIGSET 7
 `define HAZARD_V2_SIGSET 7
 `define HAZARD_V3_SIGSET 8

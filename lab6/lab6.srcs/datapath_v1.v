@@ -27,6 +27,7 @@ module datapath_v1 (
         use_rd,
         use_imm,
         aluop,
+        load,
         branch,
         jump,
         jmpr,
@@ -50,7 +51,7 @@ module datapath_v1 (
     output [`WORD_SIZE - 1:0] d_address; // data memory inout data address
     inout [`WORD_SIZE - 1:0] d_data;     // data memory inout data
 
-    // cpu interface
+    // debug interface
     output reg [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
     output reg [`WORD_SIZE - 1:0] output_port; // WWD output port
     output reg is_halted;                      // HLT indicator
@@ -64,21 +65,23 @@ module datapath_v1 (
     input memwrite;                  // enable data memory write
     input use_rs;                    // if current instruction uses rs
     input use_rt;                    // if current instruction uses rt
-    input use_rd;                    // if current instruction writes rd
-    input use_imm;                   // if current instruction puts immediate into alu
+    input use_rd;                    // if current instruction uses rd
+    input use_imm;                   // if current instruction uses immediate
     input [`ALUOP_SIZE - 1:0] aluop; // alu operation
-    input branch;                    // if current instruction is branch (BNE, BEQ, BGZ, BLZ)
-    input jump;                      // if current instruciton is jump (JMP, JAL)
-    input jmpr;                      // if current instruciton is jump register (JPR, JRL)
-    input link;                      // if current instruciton links register (JAL, JRL)
-    input wwd;                       // if current instruction is WWD
-    input hlt;                       // if current instruction is HLT
+    input load;                      // if current instruction loads memory data into register (LWD)
+    input branch;                    // if current instruction contains branch control flow (BNE, BEQ, BGZ, BLZ)
+    input jump;                      // if current instruciton contains jump control flow (JMP, JAL)
+    input jmpr;                      // if current instruciton contains jump register control flow (JPR, JRL)
+    input link;                      // if current instruciton links register to the next pc address (JAL, JRL)
+    input wwd;                       // if current instruction writes the output port (WWD)
+    input hlt;                       // if current instruction halts the machine (HLT)
 
-    // pc registers
+    // >>> pc registers >>>
     reg [`WORD_SIZE - 1:0] pc;
     wire [`WORD_SIZE - 1:0] pcplusone;
+    // <<< pc registers <<<
 
-    // ifid registers
+    // >>> ifid registers >>>
     reg [`WORD_SIZE - 1:0] ifid_pc;
     reg [`WORD_SIZE - 1:0] ifid_pcplusone;
     wire [`WORD_SIZE - 1:0] ifid_target;
@@ -94,6 +97,7 @@ module datapath_v1 (
     wire ifid_use_rd;
     wire ifid_use_imm;
     wire [`ALUOP_SIZE - 1:0] ifid_aluop;
+    wire ifid_load;
     wire ifid_branch;
     wire ifid_jump;
     wire ifid_jmpr;
@@ -107,8 +111,9 @@ module datapath_v1 (
     wire [`WORD_SIZE - 1:0] ifid_regdata1;
     wire [`WORD_SIZE - 1:0] ifid_regdata2;
     wire [`WORD_SIZE - 1:0] ifid_extimm;
+    // <<< ifid registers <<<
 
-    // idex registers
+    // >>> idex registers >>>
     reg [`WORD_SIZE - 1:0] idex_pc;
     reg [`WORD_SIZE - 1:0] idex_pcplusone;
     reg [`WORD_SIZE - 1:0] idex_target;
@@ -121,6 +126,7 @@ module datapath_v1 (
     reg idex_memwrite;
     reg idex_use_imm;
     reg [`ALUOP_SIZE - 1:0] idex_aluop;
+    reg idex_load;
     reg idex_branch;
     reg idex_jump;
     reg idex_jmpr;
@@ -137,8 +143,9 @@ module datapath_v1 (
     wire [`WORD_SIZE - 1:0] idex_aluin1;
     wire [`WORD_SIZE - 1:0] idex_aluin2;
     wire [`WORD_SIZE - 1:0] idex_aluout;
+    // <<< idex registers <<<
 
-    // exmem registers
+    // >>> exmem registers >>>
     reg [`WORD_SIZE - 1:0] exmem_pc;
     reg [`WORD_SIZE - 1:0] exmem_pcplusone;
     reg [`WORD_SIZE - 1:0] exmem_target;
@@ -149,6 +156,7 @@ module datapath_v1 (
     reg exmem_regwrite;
     reg exmem_memread;
     reg exmem_memwrite;
+    reg exmem_load;
     reg exmem_branch;
     reg exmem_jump;
     reg exmem_jmpr;
@@ -161,8 +169,9 @@ module datapath_v1 (
     reg [`WORD_SIZE - 1:0] exmem_regdata2;
     wire [`WORD_SIZE - 1:0] exmem_regdata3;
     reg [`WORD_SIZE - 1:0] exmem_aluout;
+    // <<< exmem registers <<<
 
-    // memwb registers
+    // >>> memwb registers >>>
     reg memwb_nop;
     reg memwb_regwrite;
     reg memwb_wwd;
@@ -171,11 +180,10 @@ module datapath_v1 (
     reg [`REG_ADDR - 1:0] memwb_regaddr3;
     reg [`WORD_SIZE - 1:0] memwb_regdata1;
     reg [`WORD_SIZE - 1:0] memwb_regdata3;
+    // <<< memwb registers <<<
 
-    // BTB wires
     wire [`WORD_SIZE - 1:0] predpc;
 
-    // hazard wires
     wire pc_stall;
     wire ifid_stall;
     wire pc_flush;
@@ -274,9 +282,7 @@ module datapath_v1 (
         end
     end
 
-    assign ifid_target = ifid_branch ? ifid_pcplusone + ifid_extimm :
-           ifid_jump ? {ifid_pc[15:12], ifid_ir[11:0]} :
-           ifid_jmpr ? ifid_regdata1 : ifid_pcplusone;
+    assign ifid_target = ifid_branch ? ifid_pcplusone + ifid_extimm : ifid_jump ? {ifid_pc[15:12], ifid_ir[11:0]} : ifid_jmpr ? ifid_regdata1 : ifid_pcplusone;
 
     assign ifid_regwrite = regwrite;
     assign ifid_memread = memread;
@@ -286,6 +292,7 @@ module datapath_v1 (
     assign ifid_use_rd = use_rd;
     assign ifid_use_imm = use_imm;
     assign ifid_aluop = aluop;
+    assign ifid_load = load;
     assign ifid_branch = branch;
     assign ifid_jump = jump;
     assign ifid_jmpr = jmpr;
@@ -326,6 +333,7 @@ module datapath_v1 (
             idex_memwrite <= 1'b0;
             idex_use_imm <= 1'b0;
             idex_aluop <= `ALUOP_ADD;
+            idex_load <= 1'b0;
             idex_branch <= 1'b0;
             idex_jump <= 1'b0;
             idex_jmpr <= 1'b0;
@@ -351,6 +359,7 @@ module datapath_v1 (
                 idex_memwrite <= 1'b0;
                 idex_use_imm <= 1'b0;
                 idex_aluop <= `ALUOP_ADD;
+                idex_load <= 1'b0;
                 idex_branch <= 1'b0;
                 idex_jump <= 1'b0;
                 idex_jmpr <= 1'b0;
@@ -375,6 +384,7 @@ module datapath_v1 (
                 idex_memwrite <= ifid_memwrite;
                 idex_use_imm <= ifid_use_imm;
                 idex_aluop <= ifid_aluop;
+                idex_load <= ifid_load;
                 idex_branch <= ifid_branch;
                 idex_jump <= ifid_jump;
                 idex_jmpr <= ifid_jmpr;
@@ -415,6 +425,7 @@ module datapath_v1 (
             exmem_regwrite <= 1'b0;
             exmem_memread <= 1'b0;
             exmem_memwrite <= 1'b0;
+            exmem_load <= 1'b0;
             exmem_branch <= 1'b0;
             exmem_jump <= 1'b0;
             exmem_jmpr <= 1'b0;
@@ -439,6 +450,7 @@ module datapath_v1 (
                 exmem_regwrite <= 1'b0;
                 exmem_memread <= 1'b0;
                 exmem_memwrite <= 1'b0;
+                exmem_load <= 1'b0;
                 exmem_branch <= 1'b0;
                 exmem_jump <= 1'b0;
                 exmem_jmpr <= 1'b0;
@@ -462,6 +474,7 @@ module datapath_v1 (
                 exmem_regwrite <= idex_regwrite;
                 exmem_memread <= idex_memread;
                 exmem_memwrite <= idex_memwrite;
+                exmem_load <= idex_load;
                 exmem_branch <= idex_branch;
                 exmem_jump <= idex_jump;
                 exmem_jmpr <= idex_jmpr;
@@ -477,7 +490,7 @@ module datapath_v1 (
         end
     end
 
-    assign exmem_regdata3 = exmem_memread ? d_data : exmem_link ? exmem_pcplusone : exmem_aluout;
+    assign exmem_regdata3 = exmem_load ? d_data : exmem_link ? exmem_pcplusone : exmem_aluout;
     // <<< exmem <<<
 
     // >>> memwb >>>
@@ -517,7 +530,6 @@ module datapath_v1 (
     end
     // <<< memwb <<<
 
-    // >>> output >>>
     assign opcode = ifid_ir[15:12];
     assign func = ifid_ir[5:0];
 
@@ -548,5 +560,4 @@ module datapath_v1 (
             end
         end
     end
-    // <<< output <<<
 endmodule

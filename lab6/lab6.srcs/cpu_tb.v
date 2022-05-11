@@ -18,13 +18,13 @@ module cpu_tb;
     wire [`WORD_SIZE - 1:0] d_address; // data memory inout data address
     wire [`WORD_SIZE - 1:0] d_data;    // data memory inout data
 
-    // cpu interface
+    // debug interface
     wire [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
     wire [`WORD_SIZE - 1:0] output_port; // WWD output port
     wire is_halted;                      // HLT indicator
 
     // instantiate the unit under test
-    cpu_v1 cpu_unit (.clk(clk),
+    cpu_v3 cpu_unit (.clk(clk),
                      .reset_n(reset_n),
                      .i_readM(i_readM),
                      .i_writeM(i_writeM),
