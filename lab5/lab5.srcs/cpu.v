@@ -27,7 +27,7 @@ module cpu (
     output [`WORD_SIZE - 1:0] address; // memory inout data address
     inout [`WORD_SIZE - 1:0] data;     // memory inout data
 
-    // cpu interface
+    // debug interface
     output [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
     output [`WORD_SIZE - 1:0] output_port; // WWD output port
     output is_halted;                      // HLT indicator

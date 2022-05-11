@@ -49,7 +49,7 @@ module datapath (
     output [`WORD_SIZE - 1:0] d_address; // data memory inout data address
     inout [`WORD_SIZE - 1:0] d_data;     // data memory inout data
 
-    // cpu interface
+    // debug interface
     output reg [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
     output reg [`WORD_SIZE - 1:0] output_port; // WWD output port
     output reg is_halted;                      // HLT indicator

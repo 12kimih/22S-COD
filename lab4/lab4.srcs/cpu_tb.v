@@ -18,7 +18,7 @@ module cpu_tb;
     wire [`WORD_SIZE - 1:0] d_address; // data memory inout data address
     wire [`WORD_SIZE - 1:0] d_data;    // data memory inout data
 
-    // cpu interface
+    // debug interface
     wire [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
     wire [`WORD_SIZE - 1:0] output_port; // WWD output port
     wire is_halted;                      // HLT indicator

@@ -6,12 +6,14 @@ module cpu_tb;
     reg clk;     // clock
     reg reset_n; // active-low reset
 
+    // memory interface
     wire inputReady;                 // if memory read is done
     wire readM;                      // enable memory read
     wire writeM;                     // enable memory write
     wire [`WORD_SIZE - 1:0] address; // memory inout data address
     wire [`WORD_SIZE - 1:0] data;    // memory inout data
 
+    // debug interface
     wire [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
     wire [`WORD_SIZE - 1:0] output_port; // WWD output port
     wire is_halted;                      // HLT indicator
