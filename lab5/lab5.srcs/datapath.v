@@ -6,57 +6,78 @@
 module datapath (
         clk,
         reset_n,
-        opcode,
-        func,
-        pcwrite,
-        pcmux,
-        memwrite,
-        memaddrmux,
-        irwrite,
-        regwrite,
-        regaddr3mux,
-        regdata3mux,
-        aluop,
-        aluin1mux,
-        aluin2mux,
-        branch,
-        wwd,
-        inputReady,
+        readM,
+        writeM,
         address,
         data,
-        output_port
+        num_inst,
+        output_port,
+        is_halted,
+        opcode,
+        func,
+        nstate,
+        pcwrite,
+        irwrite,
+        regwrite,
+        imemread,
+        dmemread,
+        dmemwrite,
+        use_rd,
+        add_pc,
+        use_aor,
+        use_imm,
+        aluop,
+        load,
+        branch,
+        jump,
+        jmpr,
+        link,
+        wwd,
+        hlt
     );
 
     input clk;     // clock
     input reset_n; // active-low reset
 
-    output [`OPCODE_SIZE - 1:0] opcode; // operation code of current instruction
-    output [`FUNC_SIZE - 1:0] func;     // function of current R-format instruction
-
-    input pcwrite;                   // PC write
-    input [1:0] pcmux;               // PC mux [0:AOR|1:{PC[15:12], IR[11:0]}|2:regdata1]
-    input memwrite;                  // enable memory write
-    input memaddrmux;                // memory address mux [0:PC|1:AOR]
-    input irwrite;                   // IR write
-    input regwrite;                  // enable register write
-    input [1:0] regaddr3mux;         // register address 3 mux [0:IR[9:8]|1:IR[7:6]|2:`REG_ADDR'd2]
-    input regdata3mux;               // register data 3 mux [0:AOR|1:MDR]
-    input [`ALUOP_SIZE - 1:0] aluop; // ALU operation
-    input [1:0] aluin1mux;           // ALU input 1 [0:regdata1|1:PC|2:AOR]
-    input [1:0] aluin2mux;           // ALU input 2 [0:regdata2|1:extimm|2:`WORD_SIZE'd1]
-    input branch;                    // if current instruction is branch
-    input wwd;                       // if current instruction is WWD
-
-    input inputReady;                  // if memory read is done
+    // memory interface
+    output readM;                      // enable memory read
+    output writeM;                     // enable memory write
     output [`WORD_SIZE - 1:0] address; // memory inout data address
     inout [`WORD_SIZE - 1:0] data;     // memory inout data
 
+    // cpu interface
+    output reg [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
     output reg [`WORD_SIZE - 1:0] output_port; // WWD output port
+    output reg is_halted;                      // HLT indicator
 
-    reg [`WORD_SIZE - 1:0] PC;
-    reg [`INST_SIZE - 1:0] IR;
-    reg [`WORD_SIZE - 1:0] MDR;
-    reg [`WORD_SIZE - 1:0] AOR;
+    // control interface
+    output [`OPCODE_SIZE - 1:0] opcode; // operation code of current instruction
+    output [`FUNC_SIZE - 1:0] func;     // function of current R-format instruction
+
+    input [`STATE_SIZE - 1:0] nstate; // next control state
+    input pcwrite;                    // enable pc write
+    input irwrite;                    // enable ir write
+    input regwrite;                   // enable register write
+    input imemread;                   // enable instruction memory read
+    input dmemread;                   // enable data memory read
+    input dmemwrite;                  // enable data memory write
+    input use_rd;                     // if current instruction uses rd
+    input add_pc;                     // advance pc to next address
+    input use_aor;                    // if current instruction uses aor as alu in1
+    input use_imm;                    // if current instruction uses immediate as alu in2
+    input [`ALUOP_SIZE - 1:0] aluop;  // alu operation
+    input load;                       // if current instruction is load (LWD)
+    input branch;                     // if current instruction is branch (BNE, BEQ, BGZ, BLZ)
+    input jump;                       // if current instruciton is jump (JMP, JAL)
+    input jmpr;                       // if current instruciton is jump register (JPR, JRL)
+    input link;                       // if current instruciton links register (JAL, JRL)
+    input wwd;                        // if current instruction is WWD
+    input hlt;                        // if current instruction is HLT
+
+    reg [`WORD_SIZE - 1:0] pc;
+    reg [`INST_SIZE - 1:0] ir;
+    reg [`WORD_SIZE - 1:0] mdr;
+    reg [`WORD_SIZE - 1:0] aor;
 
     wire [`REG_ADDR - 1:0] regaddr1;
     wire [`REG_ADDR - 1:0] regaddr2;
@@ -64,60 +85,47 @@ module datapath (
     wire [`WORD_SIZE - 1:0] regdata1;
     wire [`WORD_SIZE - 1:0] regdata2;
     wire [`WORD_SIZE - 1:0] regdata3;
-
     wire [`WORD_SIZE - 1:0] extimm;
 
     wire [`WORD_SIZE - 1:0] aluin1;
     wire [`WORD_SIZE - 1:0] aluin2;
     wire [`WORD_SIZE - 1:0] aluout;
-    wire bcond;
 
-    // >>> PC >>>
     always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            PC <= `WORD_SIZE'b0;
+            pc <= `WORD_SIZE'b0;
         end
         else begin
-            if (pcwrite || (branch && bcond)) begin
-                PC <= (pcmux == 2'd0) ? AOR :
-                   (pcmux == 2'd1) ? {PC[15:12], IR[11:0]} :
-                   (pcmux == 2'd2) ? regdata1 : AOR;
+            if (pcwrite) begin
+                pc <= (branch && !aluout[0]) ? pc : jump ? {pc[15:12], ir[11:0]} : jmpr ? regdata1 : aor;
             end
         end
     end
-    // <<< PC <<<
 
-    // >>> IR >>>
-    always @(posedge inputReady or negedge reset_n) begin
+    always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            IR <= `INST_SIZE'b0;
+            ir <= `INST_SIZE'b0;
         end
         else begin
             if (irwrite) begin
-                IR <= data;
+                ir <= data;
             end
         end
     end
-    // <<< IR <<<
 
-    // >>> MDR >>>
-    always @(posedge inputReady or negedge reset_n) begin
+    always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            MDR <= `WORD_SIZE'b0;
+            mdr <= `WORD_SIZE'b0;
         end
         else begin
-            MDR <= data;
+            mdr <= data;
         end
     end
-    // <<< MDR <<<
 
-    // >>> RF >>>
-    assign regaddr1 = IR[11:10];
-    assign regaddr2 = IR[9:8];
-    assign regaddr3 = (regaddr3mux == 2'd0) ? IR[9:8] :
-           (regaddr3mux == 2'd1) ? IR[7:6] :
-           (regaddr3mux == 2'd2) ? `REG_ADDR'd2 : IR[9:8];
-    assign regdata3 = regdata3mux ? MDR : AOR;
+    assign regaddr1 = ir[11:10];
+    assign regaddr2 = ir[9:8];
+    assign regaddr3 = use_rd ? ir[7:6] : link ? `REG_ADDR'd2 : ir[9:8];
+    assign regdata3 = load ? mdr : aor;
 
     RF rf (.clk(clk),
            .reset_n(reset_n),
@@ -128,57 +136,52 @@ module datapath (
            .data1(regdata1),
            .data2(regdata2),
            .data3(regdata3));
-    // <<< RF <<<
 
-    // >>> immediate >>>
-    immediate immediate_unit (.opcode(IR[15:12]),
-                              .imm(IR[7:0]),
+    immediate immediate_unit (.opcode(ir[15:12]),
+                              .imm(ir[7:0]),
                               .extimm(extimm));
-    // <<< immediate <<<
 
-    // >>> ALU >>>
-    assign aluin1 = (aluin1mux == 2'd0) ? regdata1 :
-           (aluin1mux == 2'd1) ? PC :
-           (aluin1mux == 2'd2) ? AOR : regdata1;
-    assign aluin2 = (aluin2mux == 2'd0) ? regdata2 :
-           (aluin2mux == 2'd1) ? extimm :
-           (aluin2mux == 2'd2) ? `WORD_SIZE'd1 : regdata2;
+    assign aluin1 = add_pc ? pc : use_aor ? aor : regdata1;
+    assign aluin2 = add_pc ? `WORD_SIZE'd1 : use_imm ? extimm : regdata2;
 
     ALU alu (.op(aluop),
              .in1(aluin1),
              .in2(aluin2),
              .out(aluout));
 
-    assign bcond = aluout[0];
-    // <<< ALU <<<
-
-    // >>> AOR >>>
     always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            AOR <= `WORD_SIZE'b0;
+            aor <= `WORD_SIZE'b0;
         end
         else begin
-            AOR <= aluout;
+            aor <= aluout;
         end
     end
-    // <<< AOR <<<
 
-    // >>> output >>>
-    assign opcode = IR[15:12];
-    assign func = IR[5:0];
+    assign opcode = ir[15:12];
+    assign func = ir[5:0];
 
-    assign address = memaddrmux ? AOR : PC;
-    assign data = memwrite ? regdata2 : `WORD_SIZE'bz;
+    assign readM = imemread || dmemread;
+    assign writeM = dmemwrite;
+    assign address = imemread ? pc : aor;
+    assign data = dmemwrite ? regdata2 : `WORD_SIZE'bz;
 
     always @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
+            num_inst <= -`WORD_SIZE'd1;
             output_port <= `WORD_SIZE'b0;
+            is_halted <= 1'b0;
         end
         else begin
+            if (nstate == `STATE_IF) begin
+                num_inst <= num_inst + `WORD_SIZE'd1;
+            end
             if (wwd) begin
                 output_port <= regdata1;
             end
+            if (hlt) begin
+                is_halted <= 1'b1;
+            end
         end
     end
-    // <<< output <<<
 endmodule

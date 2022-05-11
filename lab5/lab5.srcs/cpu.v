@@ -19,72 +19,94 @@ module cpu (
     input clk;     // clock
     input reset_n; // active-low reset
 
+    // memory interface
     input inputReady;                  // if memory read is done
     output readM;                      // enable memory read
     output writeM;                     // enable memory write
     output [`WORD_SIZE - 1:0] address; // memory inout data address
     inout [`WORD_SIZE - 1:0] data;     // memory inout data
 
+    // cpu interface
     output [`WORD_SIZE - 1:0] num_inst;    // number of instructions executed
     output [`WORD_SIZE - 1:0] output_port; // WWD output port
     output is_halted;                      // HLT indicator
 
+    // control interface
     wire [`OPCODE_SIZE - 1:0] opcode; // operation code of current instruction
     wire [`FUNC_SIZE - 1:0] func;     // function of current R-format instruction
 
-    wire pcwrite;                   // PC write
-    wire [1:0] pcmux;               // PC mux [0:AOR|1:{PC[15:12], IR[11:0]}|2:regdata1]
-    wire memaddrmux;                // memory address mux [0:PC|1:AOR]
-    wire irwrite;                   // IR write
-    wire regwrite;                  // enable register write
-    wire [1:0] regaddr3mux;         // register address 3 mux [0:IR[9:8]|1:IR[7:6]|2:`REG_ADDR'd2]
-    wire regdata3mux;               // register data 3 mux [0:AOR|1:MDR]
-    wire [`ALUOP_SIZE - 1:0] aluop; // ALU operation
-    wire [1:0] aluin1mux;           // ALU input 1 [0:regdata1|1:PC|2:AOR]
-    wire [1:0] aluin2mux;           // ALU input 2 [0:regdata2|1:extimm|2:`WORD_SIZE'd1]
-    wire branch;                    // if current instruction is branch
-    wire wwd;                       // if current instruction is WWD
+    wire [`STATE_SIZE - 1:0] nstate; // next control state
+    wire pcwrite;                    // enable pc write
+    wire irwrite;                    // enable ir write
+    wire regwrite;                   // enable register write
+    wire imemread;                   // enable instruction memory read
+    wire dmemread;                   // enable data memory read
+    wire dmemwrite;                  // enable data memory write
+    wire use_rd;                     // if current instruction uses rd
+    wire add_pc;                     // advance pc to next address
+    wire use_aor;                    // if current instruction uses aor as alu in1
+    wire use_imm;                    // if current instruction uses immediate as alu in2
+    wire [`ALUOP_SIZE - 1:0] aluop;  // alu operation
+    wire load;                       // if current instruction is load (LWD)
+    wire branch;                     // if current instruction is branch (BNE, BEQ, BGZ, BLZ)
+    wire jump;                       // if current instruciton is jump (JMP, JAL)
+    wire jmpr;                       // if current instruciton is jump register (JPR, JRL)
+    wire link;                       // if current instruciton links register (JAL, JRL)
+    wire wwd;                        // if current instruction is WWD
+    wire hlt;                        // if current instruction is HLT
 
     datapath datapath_unit (.clk(clk),
                             .reset_n(reset_n),
-                            .opcode(opcode),
-                            .func(func),
-                            .pcwrite(pcwrite),
-                            .pcmux(pcmux),
-                            .memwrite(writeM),
-                            .memaddrmux(memaddrmux),
-                            .irwrite(irwrite),
-                            .regwrite(regwrite),
-                            .regaddr3mux(regaddr3mux),
-                            .regdata3mux(regdata3mux),
-                            .aluop(aluop),
-                            .aluin1mux(aluin1mux),
-                            .aluin2mux(aluin2mux),
-                            .branch(branch),
-                            .wwd(wwd),
-                            .inputReady(inputReady),
+                            .readM(readM),
+                            .writeM(writeM),
                             .address(address),
                             .data(data),
-                            .output_port(output_port));
+                            .num_inst(num_inst),
+                            .output_port(output_port),
+                            .is_halted(is_halted),
+                            .opcode(opcode),
+                            .func(func),
+                            .nstate(nstate),
+                            .pcwrite(pcwrite),
+                            .irwrite(irwrite),
+                            .regwrite(regwrite),
+                            .imemread(imemread),
+                            .dmemread(dmemread),
+                            .dmemwrite(dmemwrite),
+                            .use_rd(use_rd),
+                            .add_pc(add_pc),
+                            .use_aor(use_aor),
+                            .use_imm(use_imm),
+                            .aluop(aluop),
+                            .load(load),
+                            .branch(branch),
+                            .jump(jump),
+                            .jmpr(jmpr),
+                            .link(link),
+                            .wwd(wwd),
+                            .hlt(hlt));
 
     control control_unit (.clk(clk),
                           .reset_n(reset_n),
                           .opcode(opcode),
                           .func(func),
+                          .nstate(nstate),
                           .pcwrite(pcwrite),
-                          .pcmux(pcmux),
-                          .memread(readM),
-                          .memwrite(writeM),
-                          .memaddrmux(memaddrmux),
                           .irwrite(irwrite),
                           .regwrite(regwrite),
-                          .regaddr3mux(regaddr3mux),
-                          .regdata3mux(regdata3mux),
+                          .imemread(imemread),
+                          .dmemread(dmemread),
+                          .dmemwrite(dmemwrite),
+                          .use_rd(use_rd),
+                          .add_pc(add_pc),
+                          .use_aor(use_aor),
+                          .use_imm(use_imm),
                           .aluop(aluop),
-                          .aluin1mux(aluin1mux),
-                          .aluin2mux(aluin2mux),
+                          .load(load),
                           .branch(branch),
+                          .jump(jump),
+                          .jmpr(jmpr),
+                          .link(link),
                           .wwd(wwd),
-                          .hlt(is_halted),
-                          .num_inst(num_inst));
+                          .hlt(hlt));
 endmodule

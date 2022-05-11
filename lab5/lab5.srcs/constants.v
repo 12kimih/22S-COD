@@ -20,8 +20,8 @@
 `define TARGET_SIZE 12
 `define EXT_SIZE    8 // `WORD_SIZE - `IMM_SIZE
 
-`define ALUOP_SIZE  4
-`define STATE_SIZE  3
-`define SIGSET_SIZE 25 // `STATE_SIZE + `ALUOP_SIZE + 18
+`define ALUOP_SIZE     4
+`define STATE_SIZE     3
+`define CONTROL_SIGSET 24 // `STATE_SIZE + `ALUOP_SIZE + 17
 
 `endif
